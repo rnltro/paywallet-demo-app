@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>PayWallet — a payments demo wallet</title>
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<style>
+:root{--blue:#3B5BDB;--blue-deep:#27408F;--blue-050:#EDF1FD;--blue-100:#D8DFF9;--blue-200:#BFCBF4;--stripe:#635BFF;--gold:#FFC439;--ink:#111A34;--ink-2:#39445F;--muted:#5C6885;--faint:#8B96B0;--line:#E3E7F2;--line-2:#EEF1F8;--bg:#F4F6FB;--card:#fff;--green:#067647;--green-bg:#E6F4EE;--red:#D92D20;--red-bg:#FEECEB;--amber:#B54708;--amber-bg:#FDF0E4;--gray-bg:#F1F3F8;--fb:'Avenir Next','Segoe UI',system-ui,-apple-system,sans-serif;--r:18px;--sh:0 1px 2px rgba(17,26,52,.05),0 10px 26px -14px rgba(59,91,219,.2)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font:15px/1.5 var(--fb);background:var(--bg);color:var(--ink);min-height:100vh}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
+.num{font-variant-numeric:tabular-nums}
+.spin{animation:rot .8s linear infinite;display:inline-block}@keyframes rot{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(1)}35%{transform:scale(1.045)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:none}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+.shell{display:flex;min-height:100vh}.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.page{flex:1;width:100%;max-width:1080px;margin:0 auto;padding:14px 16px calc(84px + env(safe-area-inset-bottom))}
+.page>*{animation:fadeUp .28s ease both}
+.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:10px;height:58px;padding:0 14px;background:rgba(244,246,251,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.t-brand{display:flex;align-items:center;gap:8px;font-style:italic;font-weight:800;font-size:19px;letter-spacing:-.02em}
+.t-right{margin-left:auto;display:flex;gap:4px}
+.iconbtn{position:relative;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:20px;color:var(--ink-2)}.iconbtn:hover{background:#E8ECF8}
+.bell-badge{position:absolute;top:4px;right:3px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--red);color:#fff;font:700 9.5px/16px var(--fb);text-align:center;display:grid;place-items:center}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(6,1fr);background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+.tab-i{display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 0;border-radius:12px;color:var(--faint);font:600 10px var(--fb);position:relative}.tab-i i{font-size:22px}.tab-i.act{color:var(--blue)}
+.tab-dot{display:none;position:absolute;top:4px;right:calc(50% - 15px);width:8px;height:8px;border-radius:99px;background:var(--red)}
+.mock-tag{display:inline-flex;align-items:center;font:700 9px var(--fb);letter-spacing:.08em;color:#7A5A00;background:var(--gold);border-radius:5px;padding:2px 6px;text-transform:uppercase;font-style:normal}
+.sidebar{display:none}.side-nav{display:flex;flex-direction:column;gap:4px;margin-top:22px}
+.snav-i{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:13px;font:600 14.5px var(--fb);color:var(--ink-2);text-align:left}.snav-i i{font-size:21px;width:24px;text-align:center}.snav-i:hover{background:#ECF0FA}.snav-i.act{background:var(--blue-deep);color:#fff}
+.sec-chip{display:flex;align-items:center;gap:8px;font:600 12px var(--fb);color:var(--green);background:var(--green-bg);border-radius:11px;padding:9px 12px;margin-bottom:10px}
+.user-mini{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:8px;border-radius:13px}.user-mini:hover{background:#ECF0FA}.user-mini b{display:block;font-size:13.5px}.user-mini small{color:var(--muted);font-size:12px}
+.side-logout{display:flex;align-items:center;gap:8px;width:100%;margin-top:8px;padding:10px 12px;border-radius:12px;color:var(--red);font:600 13.5px var(--fb)}.side-logout:hover{background:var(--red-bg)}
+@media(min-width:980px){.sidebar{display:flex;flex-direction:column;width:250px;flex-shrink:0;position:sticky;top:0;height:100vh;padding:22px 16px;border-right:1px solid var(--line);background:#FBFCFE}.tabbar,.topbar{display:none}.page{padding:34px 40px 60px}.side-top{display:flex;align-items:center;justify-content:space-between}.side-foot{margin-top:auto}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh)}.pad{padding:20px}
+.phead{display:flex;align-items:center;gap:10px;margin:8px 0 18px}.phead h1{font-size:23px;font-weight:700}.phead p{color:var(--muted);font-size:13.5px;margin-top:1px}.phead-r{margin-left:auto;display:flex;gap:8px}
+.greet{margin:8px 0 16px}.greet p{color:var(--muted)}.greet h1{font-size:26px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:600 15px var(--fb);border-radius:14px;padding:11px 18px;transition:transform .12s,background .15s;white-space:nowrap}.btn:active{transform:scale(.975)}
+.btn-primary{background:var(--blue);color:#fff;box-shadow:0 8px 18px -8px rgba(59,91,219,.6)}.btn-primary:hover{background:var(--blue-deep)}
+.btn-soft{background:var(--blue-050);color:var(--blue)}.btn-soft:hover{background:var(--blue-100)}
+.btn-ghost{color:var(--ink-2)}.btn-ghost:hover{background:#E8ECF8}.btn-danger{background:var(--red);color:#fff}.btn-danger-soft{background:var(--red-bg);color:var(--red)}
+.btn-block{width:100%;padding:14px 18px;font-size:15.5px}.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}.btn-sm{padding:7px 12px;font-size:13px;border-radius:10px}
+.field{margin-bottom:14px}.field label{display:block;font:600 13px var(--fb);margin-bottom:6px;color:var(--ink-2)}
+.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 14px;font-size:15px;transition:border .15s,box-shadow .15s}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-100)}
+.field.err input{border-color:var(--red);box-shadow:0 0 0 3px var(--red-bg)}
+.err-msg{display:none;color:var(--red);font-size:13px;font-weight:500;margin:-6px 0 12px}.hint{color:var(--muted);font-size:12.5px}
+.pw-wrap{position:relative}.pw-wrap input{padding-right:44px}.pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:var(--muted)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;font:600 13px var(--fb);color:var(--ink-2)}.chip.act{background:var(--blue-deep);border-color:var(--blue-deep);color:#fff}
+.sel-wrap{position:relative;flex-shrink:0}.sel-wrap select{appearance:none;border:1px solid var(--line);border-radius:999px;padding:7px 30px 7px 13px;font:600 13px var(--fb);color:var(--ink-2);background:#fff}.sel-wrap i{position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--faint);pointer-events:none}
+.st-chip{display:inline-flex;align-items:center;gap:4px;font:600 11px var(--fb);padding:3px 9px;border-radius:999px}.st-amber{background:var(--amber-bg);color:var(--amber)}.st-red{background:var(--red-bg);color:var(--red)}.st-green{background:var(--green-bg);color:var(--green)}.st-gray{background:var(--gray-bg);color:#667085}.st-blue{background:var(--blue-050);color:var(--blue)}
+.av{display:inline-grid;place-items:center;border-radius:50%;font:700 14px var(--fb);flex-shrink:0;user-select:none}
+.empty{text-align:center;padding:44px 20px;color:var(--muted)}.empty-ic{width:64px;height:64px;margin:0 auto 14px;border-radius:20px;background:var(--blue-050);color:var(--blue);display:grid;place-items:center;font-size:30px}.empty b{display:block;color:var(--ink);font:600 16px var(--fb);margin-bottom:4px}
+.divider-or{display:flex;align-items:center;gap:12px;color:var(--faint);font:600 12px var(--fb);margin:16px 0}.divider-or::before,.divider-or::after{content:'';flex:1;height:1px;background:var(--line)}
+.bal-card{position:relative;overflow:hidden;background:linear-gradient(135deg,#27408F 0%,#3B5BDB 100%);color:#fff;border-radius:22px;padding:22px;box-shadow:0 18px 40px -18px rgba(39,64,143,.6)}
+.bal-top{display:flex;align-items:center;justify-content:space-between;position:relative}.bal-label{font:600 12px var(--fb);letter-spacing:.09em;text-transform:uppercase;color:#C3D0F2}
+.bal-eye{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#C3D0F2;font-size:19px}.bal-eye:hover{background:rgba(255,255,255,.12);color:#fff}
+.bal-num{font:700 42px/1.15 var(--fb);margin:10px 0 14px;position:relative}
+.bal-row{display:flex;flex-wrap:wrap;gap:8px;position:relative}.bal-tag{display:inline-flex;align-items:center;gap:5px;font:600 11.5px var(--fb);color:#DCE4F9;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);padding:4px 10px;border-radius:999px}.bal-tag i{font-size:13px}
+.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:14px}
+.qk{display:flex;flex-direction:column;align-items:center;gap:7px;padding:13px 4px 11px;background:#fff;border:1px solid var(--line);border-radius:16px;font:600 12px var(--fb);color:var(--ink-2)}.qk:hover{border-color:var(--blue-200)}.qk-ic{width:40px;height:40px;border-radius:13px;background:var(--blue-050);color:var(--blue);display:grid;place-items:center;font-size:20px}
+.rc-strip{display:flex;align-items:center;gap:12px;margin-top:14px;padding:13px 14px;background:linear-gradient(135deg,var(--blue-050),#fff 70%);border:1px solid var(--blue-100);border-radius:16px;font:600 13.5px var(--fb);color:var(--ink);width:100%;text-align:left}
+.rc-strip:hover{border-color:var(--blue-200)}
+.rc-ic{width:40px;height:40px;border-radius:12px;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:20px;flex-shrink:0}
+.rc-strip small{display:block;color:var(--muted);font-weight:500}
+.rc-strip .caret{margin-left:auto;color:var(--faint)}
+.sec-strip{display:flex;align-items:center;gap:10px;margin-top:14px;padding:11px 14px;background:#fff;border:1px solid var(--line);border-radius:14px;font:600 12.5px var(--fb);color:var(--ink-2);width:100%;text-align:left}.sec-strip i{color:var(--green);font-size:18px}.sec-strip .caret{margin-left:auto;color:var(--faint)}.sec-strip em{font-style:normal;color:var(--muted)}
+.sec-dot{width:7px;height:7px;border-radius:99px;background:var(--green);animation:pulse 2.4s infinite}
+.sec-h{display:flex;align-items:center;justify-content:space-between;margin:22px 2px 10px}.sec-h h2{font-size:17px}.sec-h .link{font:600 13px var(--fb);color:var(--blue)}
+.list-card{padding:4px 14px}
+.txrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 2px;border-bottom:1px solid var(--line-2);border-radius:6px}.txrow:last-child{border-bottom:none}.txrow:hover{background:#F7F9FE}
+.txav{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font:700 14px var(--fb);flex-shrink:0}.txav i{font-size:20px}
+.tx-mid{min-width:0;flex:1}.tx-title{font:600 14.5px var(--fb);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}.tx-sub{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.tx-right{text-align:right;flex-shrink:0}.tx-amt{font:700 14.5px var(--fb);display:block}.tx-amt.pos{color:var(--green)}.tx-amt.mut{color:var(--muted)}
+.req-row{display:flex;align-items:center;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line-2)}.req-row:last-child{border:none}.req-btns{margin-left:auto;display:flex;gap:6px;flex-shrink:0}
+.tip-card{display:flex;gap:13px;align-items:flex-start;margin-top:18px;padding:15px 16px;background:var(--blue-050);border:1px solid var(--blue-100);border-radius:18px}.tip-card i{color:var(--blue);font-size:21px;margin-top:2px}.tip-card p{font-size:13px;color:var(--ink-2);margin:2px 0 10px}
+@media(min-width:980px){.home-grid{display:grid;grid-template-columns:410px 1fr;gap:22px;align-items:start}.greet h1{font-size:30px}}
+.flow-grid{display:grid;gap:20px;align-items:start}.flow-preview{display:none}
+@media(min-width:980px){.flow-grid{grid-template-columns:minmax(0,1fr) 350px}.flow-preview{display:block}}
+.search-row{display:flex;align-items:center;gap:9px;border:1px solid var(--line);background:#fff;border-radius:13px;padding:0 13px;margin-bottom:6px}.search-row i{color:var(--faint);font-size:18px}.search-row input{flex:1;border:none;padding:13px 0;font-size:15px;background:none}.search-row input:focus{outline:none}
+.cp-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:11px 4px;border-radius:12px}.cp-row:hover{background:#F7F9FE}.cp-row b{font:600 14.5px var(--fb);display:block}.cp-row small{color:var(--muted);font-size:12.5px}.cp-row .caret{margin-left:auto;color:var(--faint)}
+.cp-check{margin-left:auto;width:24px;height:24px;border-radius:99px;border:2px solid var(--blue-200);display:grid;place-items:center;color:#fff;font-size:14px;flex-shrink:0}.cp-row.on .cp-check{background:var(--blue);border-color:var(--blue)}
+.rq-list .people-row:last-child{border-bottom:none}
+.group-lbl{font:700 11.5px var(--fb);letter-spacing:.07em;text-transform:uppercase;color:var(--faint);padding:14px 4px 6px}
+.cp-chip{display:flex;align-items:center;gap:10px;background:var(--blue-050);border:1px solid var(--blue-100);border-radius:999px;padding:6px 8px 6px 6px;margin-bottom:16px;width:fit-content;max-width:100%}.cp-chip b{font-size:14px}.cp-chip small{color:var(--muted);font-size:12px}.cp-chip button{width:28px;height:28px;border-radius:99px;display:grid;place-items:center;color:var(--muted)}
+.amount-view{text-align:center;margin:6px 0 4px}.amount-view .cur{font:600 26px var(--fb);color:var(--faint);vertical-align:super;margin-right:2px}
+.amt-num{font:700 52px/1.1 var(--fb);letter-spacing:-.02em}.amt-num.pop{animation:pop .18s ease}
+.bal-live{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;justify-content:center;margin:4px 0 10px;padding:9px 13px;background:var(--blue-050);border:1px solid var(--blue-100);border-radius:12px;font-size:12.5px;color:var(--muted)}
+.bal-live b{color:var(--ink);font-weight:700;font-size:14px}
+.bal-live em{font-style:normal;color:var(--faint)}
+.bal-live.over{background:var(--red-bg);border-color:#F6C6C2}.bal-live.over b,.bal-live.over em{color:var(--red)}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:16px auto 4px;max-width:330px}
+.key{height:58px;border-radius:15px;background:#fff;border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}.key b{font:600 21px var(--fb)}.key small{font:600 8.5px var(--fb);letter-spacing:.14em;color:var(--faint)}.key:active{background:var(--blue-050);transform:scale(.94)}.key i{font-size:21px}
+.quick-amt{display:flex;justify-content:center;gap:8px;margin:12px 0 4px;flex-wrap:wrap}.quick-amt button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 13px;font:600 12.5px var(--fb);color:var(--blue)}.quick-amt button:hover{background:var(--blue-050)}
+.fund-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);border-radius:14px;padding:11px 13px;margin-bottom:8px;background:#fff}.fund-row.on{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-100)}
+.fund-ic{width:38px;height:38px;border-radius:11px;background:var(--blue-050);color:var(--blue);display:grid;place-items:center;font-size:19px;flex-shrink:0}
+.fund-row b{font:600 14px var(--fb);display:block}.fund-row small{color:var(--muted);font-size:12px}.fund-check{margin-left:auto;color:var(--blue);font-size:20px;opacity:0}.fund-row.on .fund-check{opacity:1}
+.fee-box{background:var(--gray-bg);border-radius:13px;padding:11px 14px;font-size:13px;color:var(--ink-2);margin:6px 0 12px}.fee-box .fr{display:flex;justify-content:space-between;padding:2.5px 0}.fee-box .fr.tot{border-top:1px dashed #D5DCEC;margin-top:5px;padding-top:7px;font-weight:700;color:var(--ink)}
+.review-card .rrow{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid var(--line-2);font-size:14px}.review-card .rrow:last-child{border:none}.review-card .rrow span{color:var(--muted)}.review-card .rrow b{text-align:right;font-weight:600;max-width:60%}.review-card .rrow.tot b{font:700 19px var(--fb)}
+.review-note{background:var(--gray-bg);border-radius:12px;padding:10px 14px;font-size:13.5px;color:var(--ink-2);font-style:italic;margin-top:4px}
+.pt-card{display:block;width:100%;text-align:left;border:1.5px solid var(--line);border-radius:15px;padding:13px 15px;margin-bottom:9px;background:#fff;transition:all .15s}
+.pt-card.on{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-100)}
+.pt-card b{font:700 14.5px var(--fb);display:flex;align-items:center;gap:7px}
+.pt-card small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+.pt-fee{display:flex;justify-content:space-between;font:600 12.5px var(--fb);color:var(--ink-2);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.pt-fee b{font-weight:700}
+.pt-badge{font:700 10px var(--fb);border-radius:5px;padding:2px 6px}
+.shield-note{display:flex;gap:9px;align-items:center;font:500 12.5px var(--fb);color:var(--green);background:var(--green-bg);border-radius:12px;padding:10px 13px;margin:14px 0}
+.hold-wrap{text-align:center;padding:22px 0 10px}.hold-btn{position:relative;width:94px;height:94px;border-radius:50%;touch-action:none;user-select:none}
+.hold-btn svg.ring{position:absolute;inset:-9px;width:112px;height:112px;transform:rotate(-90deg)}.ring-bg{fill:none;stroke:var(--blue-100);stroke-width:5}.ring-fg{fill:none;stroke:var(--blue);stroke-width:5;stroke-linecap:round;stroke-dasharray:289.03;stroke-dashoffset:289.03}
+.hold-inner{position:absolute;inset:0;margin:auto;width:70px;height:70px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:27px;box-shadow:0 10px 22px -8px rgba(59,91,219,.6)}.hold-btn.holding .hold-inner{transform:scale(.94);background:var(--blue-deep)}
+.hold-cap{font-weight:700;font-size:15px;margin-top:16px}.hold-cap2{color:var(--muted);font-size:12px;margin-top:2px}
+.filters{padding:14px 14px 10px;border-bottom:1px solid var(--line-2)}.list-count{font:600 12.5px var(--fb);color:var(--muted);padding:12px 4px 2px}
+.day-h{font:700 11.5px var(--fb);letter-spacing:.07em;text-transform:uppercase;color:var(--faint);padding:16px 2px 6px}
+@media(min-width:720px){.act-wrap{max-width:760px}}
+.ins-grid{display:grid;gap:18px}@media(min-width:980px){.ins-grid{grid-template-columns:1fr 1fr}.span2{grid-column:1/-1}}
+.stat-strip{display:grid;grid-template-columns:1fr 1fr 1fr;padding:18px 0 8px}.stat-cell{padding:2px 16px;border-left:1px solid var(--line-2)}.stat-cell:first-child{border:none;padding-left:0}
+.stat-cell small{display:flex;align-items:center;gap:5px;font:600 12px var(--fb);color:var(--muted)}.stat-cell small i{font-size:14px}.stat-cell b{display:block;font:700 21px var(--fb);margin-top:4px}
+.delta{font:600 11.5px var(--fb);margin-top:3px;display:inline-flex;align-items:center;gap:3px}.delta.up{color:var(--red)}.delta.down{color:var(--green)}
+.chart-title{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}.chart-title h3{font-size:16px}.chart-title span{font:600 12px var(--fb);color:var(--muted)}
+.donut-wrap{display:grid;grid-template-columns:170px 1fr;gap:18px;align-items:center}@media(max-width:520px){.donut-wrap{grid-template-columns:1fr;justify-items:center}}
+.leg-row{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:13px}.leg-dot{width:9px;height:9px;border-radius:3px;flex-shrink:0}.leg-row b{margin-left:auto}.leg-bar{height:4px;border-radius:99px;background:var(--line-2);flex:1;max-width:70px;overflow:hidden}.leg-bar span{display:block;height:100%;border-radius:99px}
+.people-row{display:flex;align-items:center;gap:11px;padding:10px 2px;border-bottom:1px solid var(--line-2)}.people-row:last-child{border:none}.people-row b{font:600 14px var(--fb)}.people-row small{color:var(--muted);display:block;font-size:12px}.people-row .amt{margin-left:auto;font:700 13.5px var(--fb)}
+.menu-card{padding:6px 8px}.menu-row{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:13px 10px;border-radius:13px;font:600 14.5px var(--fb)}.menu-row:hover{background:#F5F7FC}
+.menu-row>i:first-child{width:38px;height:38px;border-radius:12px;background:var(--blue-050);color:var(--blue);display:grid;place-items:center;font-size:18px;flex-shrink:0}
+.menu-row small{display:block;color:var(--muted);font-weight:500;font-size:12px}.menu-row .caret{margin-left:auto;color:var(--faint)}
+.menu-row.danger{color:var(--red)}.menu-row.danger>i:first-child{background:var(--red-bg);color:var(--red)}
+.sw{position:relative;width:46px;height:28px;border-radius:999px;background:#CFD8EC;flex-shrink:0;transition:background .2s}.sw::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .2s}.sw.on{background:var(--blue)}.sw.on::after{left:21px}
+.set-row{display:flex;align-items:center;gap:13px;padding:14px 2px;border-bottom:1px solid var(--line-2)}.set-row:last-child{border:none}.set-row .sr-txt b{font:600 14.5px var(--fb);display:block}.set-row .sr-txt small{color:var(--muted);font-size:12.5px;display:block}
+.swatches{display:flex;gap:9px;flex-wrap:wrap;margin:4px 0 14px}.sw-b{width:34px;height:34px;border-radius:12px;position:relative;border:2px solid transparent}.sw-b.on{border-color:var(--ink)}.sw-b.on::after{content:'✓';position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-weight:800}
+.pf-hero{text-align:center;padding:28px 20px 22px}.pf-stats{display:flex;justify-content:center;margin-top:16px;border-top:1px solid var(--line-2);padding-top:14px}.pf-stats div{padding:0 18px;border-left:1px solid var(--line-2)}.pf-stats div:first-child{border:none}.pf-stats b{display:block;font:700 17px var(--fb)}.pf-stats small{color:var(--muted);font-size:11.5px}
+.dev-row{display:flex;align-items:center;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line-2)}.dev-row:last-child{border:none}.dev-row i{width:38px;height:38px;border-radius:11px;background:var(--gray-bg);color:var(--ink-2);display:grid;place-items:center;font-size:18px}
+.cur-tag{font:700 10px var(--fb);letter-spacing:.06em;color:var(--blue);background:var(--blue-050);border-radius:6px;padding:2px 6px}
+.seg{display:inline-flex;background:#E8ECF8;border-radius:12px;padding:4px;gap:2px}.seg button{padding:7px 16px;border-radius:9px;font:600 13px var(--fb);color:var(--muted)}.seg button.act{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(17,26,52,.12)}
+.auth-wrap{min-height:100vh;display:grid;place-items:center;padding:20px}
+.auth-card{width:min(430px,100%);background:#fff;border:1px solid var(--line);border-radius:26px;box-shadow:var(--sh);padding:26px 24px}
+.auth-brand{display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:4px;font-style:italic;font-weight:800;font-size:24px}
+.auth-sub{text-align:center;color:var(--muted);font-size:13.5px;margin-bottom:20px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:#E8ECF8;border-radius:13px;padding:4px;gap:2px;margin-bottom:20px}.tabs button{padding:9px;border-radius:10px;font:600 14px var(--fb);color:var(--muted)}.tabs button.act{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(17,26,52,.12)}
+.terms{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--ink-2);margin:4px 0 16px}.terms input{margin-top:3px;width:16px;height:16px;accent-color:var(--blue)}
+.strength{display:flex;gap:5px;margin-top:7px;align-items:center}.strength span{height:5px;flex:1;border-radius:99px;background:#E3E7F2}
+.strength.s1 span:nth-child(-n+1){background:var(--red)}.strength.s2 span:nth-child(-n+2){background:#E8A13A}.strength.s3 span:nth-child(-n+3){background:#7CB342}.strength.s4 span{background:var(--green)}.strength em{font:600 11px var(--fb);color:var(--muted);font-style:normal;min-width:44px;text-align:right}
+.code-input{letter-spacing:.55em;text-align:center;font-weight:700;font-size:22px!important}
+.auth-panel{display:none}
+@media(min-width:960px){.auth-wrap{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);place-items:stretch;padding:0;background:var(--bg)}
+.auth-panel{display:flex;flex-direction:column;justify-content:center;background:linear-gradient(160deg,#1B2A66,#27408F 55%,#3B5BDB);color:#fff;padding:60px 7vw}.auth-wrap>div:last-child{display:grid;place-items:center;overflow:auto}
+.payfeat{display:flex;gap:14px;margin-top:24px;max-width:430px}.payfeat i{width:42px;height:42px;border-radius:13px;background:rgba(255,255,255,.1);color:#C6D2F4;display:grid;place-items:center;font-size:20px;flex-shrink:0}
+.payfeat b{font-weight:600;font-size:15.5px;display:block}.payfeat p{color:#A9B8E6;font-size:13px;margin-top:2px}.auth-foot{margin-top:32px;color:#8DA0D8;font-size:12.5px;max-width:430px}}
+.overlay{position:fixed;inset:0;z-index:100;background:rgba(17,26,52,.48);backdrop-filter:blur(3px);display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .22s}
+.overlay.open{opacity:1}.modal{position:relative;background:#fff;width:min(560px,100%);max-height:88vh;overflow:auto;border-radius:24px 24px 0 0;padding:20px 20px calc(22px + env(safe-area-inset-bottom));transform:translateY(28px);transition:transform .24s}.overlay.open .modal{transform:none}
+.m-x{position:absolute;top:12px;right:12px}
+@media(min-width:720px){.overlay{align-items:center;padding:24px}.modal{border-radius:24px;transform:translateY(12px) scale(.98)}}
+.dlg{text-align:center;padding:8px 4px 2px}.dlg-ic{width:56px;height:56px;margin:0 auto 14px;border-radius:18px;background:var(--blue-050);color:var(--blue);display:grid;place-items:center;font-size:27px}.dlg-ic.danger{background:var(--red-bg);color:var(--red)}.dlg-ic.warn{background:var(--amber-bg);color:var(--amber)}
+.dlg h3{font-size:19px;margin-bottom:6px}.dlg p{color:var(--muted);font-size:14px;max-width:380px;margin:0 auto}.dlg-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+.toasts{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:300;display:flex;flex-direction:column;gap:8px;width:min(92vw,430px);pointer-events:none}
+.toast{display:flex;align-items:center;gap:10px;background:var(--blue-deep);color:#fff;border-radius:15px;padding:12px 15px;font:500 13.5px var(--fb);box-shadow:0 14px 34px -10px rgba(39,64,143,.5);animation:fadeUp .26s ease}.toast i{font-size:19px;flex-shrink:0}.toast.out{opacity:0;transform:translateY(-8px);transition:all .24s}
+.sms{position:fixed;top:14px;left:50%;transform:translate(-50%,-130%);z-index:400;width:min(92vw,390px);background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 44px -12px rgba(17,26,52,.35);padding:12px 14px;transition:transform .4s cubic-bezier(.2,.9,.25,1.2)}
+.sms.in{transform:translate(-50%,0)}.sms-head{display:flex;align-items:center;gap:8px;font-size:13px}.sms-head b{font-weight:700}.sms-head span{color:var(--faint);font-size:11.5px;margin-left:auto}.sms-head button{color:var(--faint);width:26px;height:26px;display:grid;place-items:center}
+.sms-body{background:#EFF2F8;border-radius:12px;padding:9px 12px;font-size:13.5px;margin-top:8px;line-height:1.45}
+.proc-wrap{position:fixed;inset:0;z-index:200;background:rgba(244,246,251,.7);backdrop-filter:blur(10px);display:grid;place-items:center;opacity:0;transition:opacity .25s;padding:20px}.proc-wrap.show{opacity:1}
+.proc{background:#fff;border:1px solid var(--line);border-radius:26px;box-shadow:var(--sh);padding:30px;width:min(400px,100%);text-align:center}
+.proc-title{font-weight:700;font-size:18px;margin:14px 0 4px}.proc-steps{list-style:none;text-align:left;margin-top:16px}
+.proc-steps li{display:flex;align-items:center;gap:11px;padding:8px 2px;color:var(--faint);font:500 13.5px var(--fb)}.proc-steps li .ps-ic{width:22px;display:grid;place-items:center;font-size:17px}.proc-steps li.act{color:var(--ink)}.proc-steps li.done{color:var(--ink-2)}.proc-steps li.done .ps-ic{color:var(--green)}
+.proc-demo{display:flex;align-items:center;justify-content:center;gap:6px;color:var(--muted);font-size:11.5px;margin-top:16px;border-top:1px solid var(--line-2);padding-top:13px}
+.big-check{width:92px;height:92px;margin:6px auto 14px}.bc-c{fill:var(--green-bg);stroke:var(--green);stroke-width:4;stroke-dasharray:277;stroke-dashoffset:277;animation:draw .55s ease forwards}.bc-p{fill:none;stroke:var(--green);stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:60;stroke-dashoffset:60;animation:draw .4s ease .45s forwards}@keyframes draw{to{stroke-dashoffset:0}}
+.success-wrap{text-align:center;padding:26px 0 6px;max-width:440px;margin:0 auto}.success-wrap h1{font-size:26px}.s-amt{font-weight:700;font-size:44px;margin:6px 0}
+.s-to{display:inline-flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 14px 6px 7px;font:600 14px var(--fb);margin-bottom:16px}
+.meta-list{text-align:left;margin:18px 0}.meta-list .rrow{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid var(--line-2);font-size:13.5px}.meta-list .rrow:last-child{border:none}.meta-list .rrow span{color:var(--muted)}.meta-list .rrow b{font-weight:600;text-align:right;max-width:62%;word-break:break-all}
+.demo-note{display:inline-flex;align-items:center;gap:6px;font:600 11.5px var(--fb);color:var(--amber);background:var(--amber-bg);border-radius:999px;padding:5px 12px;margin:8px 0 18px}
+.tx-banner{display:flex;gap:9px;align-items:flex-start;border-radius:13px;padding:11px 13px;font:500 13px var(--fb);margin:12px 0}.tx-banner i{font-size:17px;margin-top:1px}
+.tx-banner.b-amber{background:var(--amber-bg);color:var(--amber)}.tx-banner.b-red{background:var(--red-bg);color:var(--red)}.tx-banner.b-blue{background:var(--blue-050);color:var(--blue)}
+.tx-big{text-align:center;padding:4px 0 8px}.tx-big .amt{font-weight:700;font-size:38px}
+.mono{font:600 12.5px ui-monospace,'SF Mono',Menlo,monospace}
+.acc{border-bottom:1px solid var(--line-2)}.acc:last-child{border:none}.acc-head{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:15px 4px;font:600 14.5px var(--fb)}
+.acc-head i.q{width:36px;height:36px;border-radius:11px;background:var(--blue-050);color:var(--blue);display:grid;place-items:center;font-size:17px;flex-shrink:0}.acc-head .caret{margin-left:auto;color:var(--faint);transition:transform .2s}.acc.open .caret{transform:rotate(90deg)}
+.acc-body{display:none;padding:0 4px 16px 52px;color:var(--ink-2);font-size:13.5px;line-height:1.6}.acc.open .acc-body{display:block}
+.notice{display:flex;gap:10px;align-items:flex-start;background:var(--blue-050);border:1px solid var(--blue-100);border-radius:14px;padding:12px 14px;font-size:13px;color:var(--ink-2)}.notice i{color:var(--blue);font-size:17px;margin-top:1px}
+.notif-row{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;padding:13px 4px;border-bottom:1px solid var(--line-2)}.notif-row:hover{background:#F7F9FE}.notif-row.unread{background:var(--blue-050)}
+.notif-ic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:18px;flex-shrink:0;background:var(--blue-050);color:var(--blue)}
+.notif-ic.security{background:var(--amber-bg);color:var(--amber)}.notif-ic.deposit{background:var(--green-bg);color:var(--green)}.notif-ic.request{background:#F3E8FF;color:#6941C6}
+.notif-row b{font:600 14px var(--fb);display:block}.notif-row p{color:var(--muted);font-size:13px;margin-top:1px}.notif-row time{color:var(--faint);font-size:11.5px;flex-shrink:0;margin-left:auto}
+.qr-box{display:inline-block;padding:14px;background:#fff;border:1.5px solid var(--line);border-radius:18px;box-shadow:var(--sh)}
+.link-row{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}
+.link-row .mono{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sh-tile{display:flex;flex-direction:column;align-items:center;gap:6px;font:600 11.5px var(--fb);color:var(--ink-2);padding:4px}
+.sh-tile span{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;color:#fff;font-size:24px}
+.sh-tile:hover span{filter:brightness(.94)}
+.stx-card{border:1.5px solid var(--line);border-radius:15px;padding:14px;background:#fff}
+.stx-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.stx-head .dot{width:9px;height:9px;border-radius:99px;background:var(--stripe)}
+.stx-head b{font:700 13.5px var(--fb)}
+.stx-head small{color:var(--muted);margin-left:auto}
+.stx-in{border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:15px;transition:border .15s,box-shadow .15s}
+.stx-in:focus-within{border-color:var(--stripe);box-shadow:0 0 0 3px rgba(99,91,255,.18)}
+.stx-in input{border:none;outline:none;width:100%;font:500 15px ui-monospace,'SF Mono',Menlo,monospace;letter-spacing:.06em;background:none}
+.stx-meta{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.stx-brand{font:700 11px var(--fb);letter-spacing:.05em;color:var(--muted)}
+.stx-test{font:700 10px var(--fb);color:var(--stripe);background:rgba(99,91,255,.09);border-radius:6px;padding:2px 7px}
+.stx-3ds{border:1px solid var(--line);border-radius:14px;padding:20px;text-align:center}
+.stx-3ds .bank{display:flex;align-items:center;gap:8px;justify-content:center;font:700 13px var(--fb);color:var(--ink-2);margin-bottom:12px}
+.stx-3ds .bank i{color:#F5A623;font-size:20px}
+.stx-otp{display:flex;gap:8px;justify-content:center;margin:12px 0}
+.stx-otp input{width:42px;height:50px;text-align:center;font:700 22px var(--fb);border:1.5px solid var(--line);border-radius:10px}
+.stx-otp input:focus{outline:none;border-color:var(--stripe);box-shadow:0 0 0 3px rgba(99,91,255,.18)}
+.stx-err{color:var(--red);font-weight:600;font-size:13px;margin-top:8px;display:none;text-align:center}
+.stx-err.on{display:block}
+.drill-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-2);font-size:13px}
+.drill-row b{font-weight:600}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+<div id="layer"></div>
+<script>
+'use strict';
+/* PayWallet — a payments demo wallet. One account, one balance, one rail.
+   F&F vs G&S fees, mock Stripe card layer (test cards, 3DS), Pay in 4,
+   Savings (simulated APY), G&S cashback, raw-tx viewer.
+   Original demo inspired by real payment platforms; not affiliated with
+   PayPal or Stripe. All data simulated locally. No network, no real money. */
+
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=p=>p+'_'+Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
+const fmt=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n);
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const when=(d,h=12,m=0)=>{const t=new Date();t.setDate(t.getDate()-d);t.setHours(h,m,0,0);return t.getTime();};
+const tLabel=ts=>new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+function dLabel(ts){const d=new Date(ts),n=new Date();const mid=t=>{const x=new Date(t);x.setHours(0,0,0,0);return x.getTime()};const dd=Math.round((mid(n)-mid(d))/864e5);
+if(dd===0)return'Today';if(dd===1)return'Yesterday';return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+(d.getFullYear()!==n.getFullYear()?', '+d.getFullYear():'');}
+const initials=n=>n.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const digits=s=>String(s||'').replace(/\D/g,'');
+function luhn(num){let s=0,alt=false;for(let i=num.length-1;i>=0;i--){let d=+num[i];if(alt){d*=2;if(d>9)d-=9;}s+=d;alt=!alt;}return num.length>=13&&s%10===0;}
+function cardBrand(n){if(/^4/.test(n))return'VISA';if(/^5[1-5]/.test(n))return'MC';if(/^3[47]/.test(n))return'AMEX';if(/^6/.test(n))return'DISC';return'CARD';}
+function pwScore(p){let s=0;if(p.length>=8)s++;if(p.length>=12)s++;if(/[A-Z]/.test(p)&&/[a-z]/.test(p))s++;if(/\d/.test(p))s++;if(/[^A-Za-z0-9]/.test(p))s++;return Math.min(4,s);}
+const pwWord=['Too short','Weak','Fair','Good','Strong'];
+function niceMax(v){if(v<=0)return 10;const p=Math.pow(10,Math.floor(Math.log10(v)));for(const m of[1,1.5,2,2.5,3,4,5,6,8,10]){if(m*p>=v)return m*p;}return 10*p;}
+function copyText(s,msg='Copied to clipboard'){(async()=>{try{await navigator.clipboard.writeText(s);}catch(e){const ta=document.createElement('textarea');ta.value=s;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(_){/**/}ta.remove();}toast(msg,'success');})();}
+
+const store={_m:{},
+get(k){try{return window.localStorage.getItem(k);}catch(e){return Object.prototype.hasOwnProperty.call(this._m,k)?this._m[k]:null;}},
+set(k,v){try{window.localStorage.setItem(k,v);}catch(e){this._m[k]=v;}},
+del(k){try{window.localStorage.removeItem(k);}catch(e){delete this._m[k];}}};
+
+const ic=(n,c='')=>`<i class="ph ${c} ph-${n}" aria-hidden="true"></i>`;
+const icf=(n,c='')=>`<i class="ph-fill ${c} ph-${n}" aria-hidden="true"></i>`;
+const lwWord=(st='')=>`<span style="font-style:italic;font-weight:800;letter-spacing:-.02em;${st}"><b style="color:#1D2D69">PayWallet</b></span>`;
+const lwMark=(s=30)=>`<svg width="${s}" height="${Math.round(s*.82)}" viewBox="0 0 40 33" aria-hidden="true"><path d="M20 4c8 0 13 5.5 13 12.5S28 29 20 29 7 23.5 7 16.5 12 4 20 4Z" fill="none" stroke="#3B5BDB" stroke-width="4.5"/><path d="M20 11a5.5 5.5 0 1 1-5.4 6.6" fill="none" stroke="#00C2A8" stroke-width="3.6" stroke-linecap="round"/></svg>`;
+const mockTag=()=>`<span class="mock-tag">Mock demo</span>`;
+
+const AV_COLORS=['#3B5BDB','#009CDE','#1D2D69','#0E9384','#B54708','#C01048','#6941C6','#067647'];
+const CATS={transfer:{label:'Friends & Family',icon:'users-three',c:'#3B5BDB'},shopping:{label:'Goods & Services',icon:'bag',c:'#B54708'},food:{label:'Food & Drink',icon:'fork-knife',c:'#0E9384'},transport:{label:'Transport',icon:'car',c:'#009CDE'},deposit:{label:'Add money',icon:'plus-circle',c:'#067647'},withdrawal:{label:'Transfer to bank',icon:'bank',c:'#B54708'}};
+const ST={pending:['clock','Pending','amber'],failed:['x-circle','Failed','red'],declined:['x-circle','Declined','red'],cancelled:['minus-circle','Cancelled','gray'],flagged:['shield-warning','Flagged','amber'],completed:['check-circle','Completed','green']};
+
+function seed(){
+const me={id:'u_me',name:'Alex Morgan',email:'demo-user@paywallet.demo',phone:'+1 (415) 555-0100',color:'#3B5BDB',joined:'2023-02-10',verified:true,password:btoa('demo1234'),balance:1845.75,savings:{amt:250,last:Date.now()},
+settings:{twofa:true,loginAlerts:true,secSens:'standard',guideDismissed:false,notif:{payments:true,requests:true,deposits:true,security:true,marketing:false}},
+methods:[{id:'pm_chase',type:'bank',name:'Chase Checking',last4:'8832',isDefault:true}],
+devices:[{id:'d1',name:'MacBook Air · Chrome on macOS',cur:true},{id:'d2',name:'iPhone 15 · PayWallet app (mock)',cur:false,last:'2 days ago'}]};
+const users=[me,
+{id:'u_jordan',name:'Jordan Reyes',email:'jordan.reyes@example.com',phone:'+1 (415) 555-0177',color:'#0E9384'},
+{id:'u_sam',name:'Sam Whitfield',email:'sam.w@example.com',phone:'+1 (628) 555-0121',color:'#6941C6'},
+{id:'u_priya',name:'Priya Nair',email:'priya.n@example.com',color:'#C01048'},
+{id:'u_diego',name:'Diego Fuentes',email:'diego.f@example.com',phone:'+1 (510) 555-0198',color:'#B54708'},
+{id:'u_maya',name:'Maya Osei',email:'maya.o@example.com',color:'#067647'},
+{id:'u_tomas',name:'Tomás Bergström',email:'tomas.b@example.com',color:'#009CDE'},
+{id:'u_elena',name:'Elena Sokolova',email:'elena.s@example.com',color:'#175CD3'},
+{id:'u_nina',name:'Nina Kovács',email:'nina.k@example.com',color:'#C01048'}];
+const cp=id=>{const u=users.find(x=>x.id===id);return{id:u.id,name:u.name,email:u.email||'',color:u.color};};
+const gnsFee=d=>(Math.round(d*100*0.0349)+49)/100;
+const tx=[];let n=1;
+const P=[[0,'in','u_jordan',35.00,'transfer','Concert tickets — my half',20,12,'completed','ff'],
+[1,'out','u_sam',62.40,'food','Dinner at Izakaya',19,35,'completed','ff'],
+[2,'in','u_priya',120.00,'shopping','Vintage lamp (G&S)',14,2,'completed','gns'],
+[3,'out','u_maya',18.50,'transport','Rideshare split',8,41,'completed','ff'],
+[5,'out','u_nina',480.00,'shopping','Marketplace purchase',21,30,'flagged','gns'],
+[6,'in','u_diego',75.00,'transfer','Gas money',10,5,'completed','ff'],
+[8,'out','u_tomas',210.00,'shopping','Standing desk (G&S)',16,22,'completed','gns'],
+[10,'in','u_elena',96.20,'transfer','Cabin split',20,11,'completed','ff'],
+[11,'out','u_sam',500.00,'transfer','Rent share',9,0,'completed','ff'],
+[13,'out','u_jordan',12.40,'food','Coffee run',9,3,'completed','ff'],
+[15,'in','u_maya',60.00,'transfer','Ski trip deposit',19,33,'completed','ff'],
+[18,'out','u_priya',33.60,'food','Brunch',11,15,'completed','ff'],
+[20,'out','u_tomas',88.00,'food','Team lunch',12,45,'failed','ff'],
+[24,'in','u_sam',130.00,'transfer','Sold my monitor',21,5,'completed','ff'],
+[27,'out','u_maya',45.00,'transport','Fuel split',17,20,'completed','ff'],
+[30,'in','u_elena',85.00,'transfer','Gift contribution',12,30,'completed','ff'],
+[33,'out','u_nina',30.00,'transfer','Birthday gift',13,15,'completed','ff'],
+[36,'in','u_jordan',25.00,'transfer','Fantasy league buy-in',9,14,'completed','ff'],
+[40,'out','u_tomas',21.00,'shopping','Movie night (G&S)',20,10,'completed','gns']];
+P.forEach(p=>tx.push({id:'tx_'+String(n++).padStart(3,'0'),uid:'u_me',kind:'payment',dir:p[1],amount:p[3],fee:p[9]==='gns'?gnsFee(p[3]):0,payType:p[9],cp:cp(p[2]),cat:p[4],note:p[5],status:p[8],date:when(p[0],p[6],p[7]),method:'wallet',extra:{settled:true,protect:p[9]==='gns',cashback:p[9]==='gns'?Math.round(p[3]*100*0.01)/100:0}}));
+[[1,500],[12,900],[26,300]].forEach(d=>tx.push({id:'tx_'+String(n++).padStart(3,'0'),uid:'u_me',kind:'deposit',dir:'in',amount:d[1],fee:0,cp:{name:'Chase Checking',email:'•• 8832',bank:true},cat:'deposit',note:'',status:'completed',date:when(d[0],10,2),method:'pm_chase'}));
+[[7,'pm_chase',250,0]].forEach(d=>tx.push({id:'tx_'+String(n++).padStart(3,'0'),uid:'u_me',kind:'withdrawal',dir:'out',amount:d[2],fee:d[3],cp:{name:'Chase Checking',email:'1–3 days',bank:true},cat:'withdrawal',note:'Standard transfer',status:'completed',date:when(d[0],17,40),method:d[1]}));
+const reqs=[{id:'rq_1',dir:'in',from:'u_jordan',to:'u_me',amount:30.00,note:'Movie tickets',status:'pending',date:when(0,10,5)},
+{id:'rq_2',dir:'in',from:'u_nina',to:'u_me',amount:22.50,note:'Parking split',status:'pending',date:when(2,9,0)},
+{id:'rq_3',dir:'out',from:'u_me',to:'u_diego',amount:75.00,note:'Gas money',status:'pending',date:when(1,12,0)},
+{id:'rq_4',dir:'out',from:'u_me',to:'u_priya',amount:40.00,note:'Dinner (split)',status:'paid',date:when(3,18,0),paidAt:when(3,20,2)}];
+reqs.forEach(r=>tx.unshift({id:uid('tx'),uid:'u_me',kind:'request',dir:r.dir,amount:r.amount,fee:0,payType:'ff',cp:r.dir==='in'?cp(r.from):cp(r.to),cat:'transfer',note:r.note,status:r.status==='paid'?'completed':r.status,date:r.date,method:'wallet',reqId:r.id}));
+tx.sort((a,b)=>b.date-a.date);
+const notifs=[{id:uid('n'),type:'payment',title:'Jordan Reyes sent you $35.00',body:'“Concert tickets — my half”',ts:when(0,20,12),read:false,txId:'tx_001'},
+{id:uid('n'),type:'request',title:'Jordan Reyes requested $30.00',body:'“Movie tickets” — pay from your balance or a linked card',ts:when(0,10,5),read:false},
+{id:uid('n'),type:'deposit',title:'Money added',body:'$500.00 from Chase Checking ••8832',ts:when(1,10,2),read:true},
+{id:uid('n'),type:'security',title:'New sign-in recognized',body:'Chrome on macOS · simulated device check',ts:when(2,8,12),read:true},
+{id:uid('n'),type:'system',title:'Welcome to PayWallet (mock demo)',body:'Every payment here is simulated — no real money moves. Try Pay in 4, Savings, and the card flow.',ts:when(30,9,0),read:true}];
+return{v:1,session:null,users,contacts:[],tx,reqs,notifs,plans:[],flags:{actNew:false},settings:{hideBalance:false},invites:[],contactsSynced:false};
+}
+const KEY='loop.demo.v1';
+let db;
+const save=()=>store.set(KEY,JSON.stringify(db));
+const me=()=>db.users.find(u=>u.id===db.session.userId);
+const userById=id=>db.users.find(u=>u.id===id);
+const findCp=id=>userById(id)||db.contacts.find(c=>c.id===id);
+const nameOf=id=>(findCp(id)||{}).name||'Someone';
+const myMethods=()=>me().methods||[];
+const methodById=id=>id==='wallet'?{id:'wallet',type:'wallet'}:id==='card'?{id:'card',type:'card',brand:'Card',last4:'new'}:myMethods().find(m=>m.id===id)||{id:'wallet',type:'wallet'};
+const methodLabel=id=>{if(id==='wallet')return'PayWallet balance';if(id==='card')return'New card (mock Stripe)';const m=methodById(id);return m.type==='card'?`${m.brand} •• ${m.last4}`:`${m.name||'Bank'} •• ${m.last4}`;};
+function feeQuote(payType,methodId,cents){const m=methodById(methodId);
+if(payType==='ff'){if(m.type==='card'){const fee=Math.round(cents*0.029)+30;return{fee,payer:'sender',youPay:cents+fee,theyGet:cents};}
+return{fee:0,payer:'sender',youPay:cents,theyGet:cents};}
+const fee=Math.round(cents*0.0349)+49;return{fee,payer:'receiver',youPay:cents,theyGet:Math.max(0,cents-fee)};}
+function transferFee(methodId,cents){const m=methodById(methodId);return m&&m.type==='card'?Math.min(Math.round(cents*0.01),1000):0;}
+const amtStr=c=>Math.floor(Math.abs(Number(c)||0)/100).toLocaleString('en-US')+'.'+String(Math.floor(Math.abs(Number(c)||0))%100).padStart(2,'0');
+
+/* ---------- MOCK Stripe-style card layer ---------- */
+const TEST_CARDS={
+'4242424242424242':{behavior:'success'},
+'4000000000000002':{behavior:'declined'},
+'4000000000009995':{behavior:'insufficient'},
+'4000002760003184':{behavior:'3ds'}};
+function detectBrand(n){if(/^4/.test(n))return'Visa';if(/^5[1-5]/.test(n))return'Mastercard';if(/^3[47]/.test(n))return'Amex';if(/^6/.test(n))return'Discover';return'Card';}
+function fmtCard(v){return digits(v).slice(0,16).replace(/(.{4})/g,'$1 ').trim();}
+function formatMoney(c){return fmt(c/100);}
+/* Adapter: swap this body for a real Stripe call in production. */
+function processCard({amountC,card,onStepUp,onSuccess,onFail}){
+const num=digits(card.number);
+if(!luhn(num))return onFail('That card number looks invalid.');
+if(amountC>=50000)return onStepUp();
+const t=TEST_CARDS[num];
+setTimeout(()=>{
+if(!t||t.behavior==='success')return onSuccess({ref:'pi_mock_'+Math.random().toString(36).slice(2,10)});
+if(t.behavior==='3ds')return onStepUp();
+if(t.behavior==='insufficient')return onFail('Your card has insufficient funds.');
+onFail('Your card was declined.');},900+Math.random()*500);}
+function cardSheet(amountC,onSuccess){
+const ov=openModal(`<div class="stx-body" style="padding-top:22px">
+<div class="stx-head"><span class="dot"></span><b>Pay with card</b><span class="stx-test">TEST MODE</span></div>
+<p class="hint" style="margin-bottom:14px">${formatMoney(amountC)} · mock Stripe-style processing. Try a <b>test card</b>: <span class="mono">4242…</span> succeeds, <span class="mono">…0002</span> declines, <span class="mono">…9995</span> insufficient, <span class="mono">…3184</span> triggers 3DS.</p>
+<div class="stx-card">
+<div class="stx-in"><input id="stx-num" inputmode="numeric" placeholder="4242 4242 4242 4242" autocomplete="cc-number" aria-label="Card number"></div>
+<div class="stx-meta"><span class="stx-brand" id="stx-b">Card</span><span class="stx-test">🔒 Encrypted (mock)</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+<div class="stx-in"><input id="stx-exp" placeholder="MM / YY" inputmode="numeric" aria-label="Expiry"></div>
+<div class="stx-in"><input id="stx-cvc" placeholder="CVC" inputmode="numeric" maxlength="4" aria-label="CVC"></div>
+</div></div>
+<p class="stx-err" id="stx-err"></p>
+<button class="btn btn-primary btn-block" id="stx-pay" style="margin-top:14px" disabled>Pay ${formatMoney(amountC)}</button>
+<button class="btn btn-ghost btn-block" data-action="close-modal-btn" style="margin-top:8px">Cancel</button>
+<p class="hint" style="text-align:center;margin-top:10px">${ic('info')} Card inputs stay in this browser. Nothing is transmitted.</p>
+</div>`);
+const numI=ov.querySelector('#stx-num'),expI=ov.querySelector('#stx-exp'),cvcI=ov.querySelector('#stx-cvc'),
+err=ov.querySelector('#stx-err'),pay=ov.querySelector('#stx-pay'),br=ov.querySelector('#stx-b');
+let ready=false;
+const check=()=>{const n=digits(numI.value);const e=digits(expI.value);const c=digits(cvcI.value);
+br.textContent=detectBrand(n);ready=n.length>=15&&e.length>=4&&c.length>=3&&luhn(n);
+pay.disabled=!ready;};
+numI.addEventListener('input',()=>{numI.value=fmtCard(numI.value);check();});
+expI.addEventListener('input',()=>{let v=digits(expI.value).slice(0,4);
+if(v.length===1&&Number(v)>1)v='0'+v;
+if(v.length>=2){const mm=Number(v.slice(0,2));
+if(mm===0)v='01'+v.slice(2);else if(mm>12)v='12'+v.slice(2);}
+if(v.length>2)v=v.slice(0,2)+' / '+v.slice(2);
+expI.value=v;if(digits(v).length===4)cvcI.focus();check();});
+cvcI.addEventListener('input',()=>{cvcI.value=digits(cvcI.value).slice(0,4);check();});
+pay.addEventListener('click',()=>{
+if(!ready)return;
+const cardInfo={brand:detectBrand(digits(numI.value)),last4:digits(numI.value).slice(-4)};
+pay.disabled=true;pay.innerHTML=`<i class="ph ph-circle-notch spin"></i>Processing…`;
+processCard({amountC,card:{number:numI.value,exp:expI.value,cvc:cvcI.value},
+onStepUp:()=>show3DS(ov,amountC,r=>{closeModal(ov);onSuccess({...r,card:cardInfo});}),
+onSuccess:r=>{closeModal(ov);onSuccess({...r,card:cardInfo});},
+onFail:msg=>{err.textContent=msg;err.classList.add('on');pay.disabled=false;
+pay.innerHTML=`Pay ${formatMoney(amountC)}`;toast(msg,'error');}});});
+return ov;}
+function show3DS(parentOv,amountC,onDone){
+const body=parentOv.querySelector('.stx-body');
+body.innerHTML=`<div class="stx-3ds">
+<div class="bank">${ic('shield-check')}<b>Mock Bank</b> · 3D Secure step-up</div>
+<p class="hint">Your bank needs to verify this ${formatMoney(amountC)} payment.</p>
+<div class="stx-otp">${[0,1,2,3,4,5].map((_,i)=>`<input inputmode="numeric" maxlength="1" aria-label="Digit ${i+1}" ${i===0?'autofocus':''}>`).join('')}</div>
+<p class="hint">Demo hint: the correct code is <b class="mono">123456</b>.</p>
+<p class="stx-err" id="ds-err"></p>
+<button class="btn btn-primary btn-block" id="ds-ok" style="margin-top:6px">Verify</button>
+<button class="btn btn-ghost btn-block" data-action="close-modal-btn" style="margin-top:8px">Cancel payment</button>
+</div>`;
+const inputs=[...body.querySelectorAll('.stx-otp input')];
+const err=body.querySelector('#ds-err');
+inputs.forEach((inp,i)=>inp.addEventListener('input',()=>{if(inp.value&&i<5)inputs[i+1].focus();}));
+inputs.forEach((inp,i)=>inp.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!inp.value&&i>0)inputs[i-1].focus();}));
+body.querySelector('#ds-ok').addEventListener('click',()=>{
+const code=inputs.map(x=>x.value).join('');
+if(code.length<6){err.textContent='Enter all six digits.';err.classList.add('on');return;}
+if(code!=='123456'){err.textContent='That code failed verification. Try 123456.';err.classList.add('on');
+toast('3DS verification failed (mock)','error');return;}
+err.classList.remove('on');
+toast('Verified by your bank (mock 3DS)','success');
+onDone({ref:'pi_mock_3ds_'+Math.random().toString(36).slice(2,8),stepUp:true});});}
+function cvcSheet(m,amountC,onDone){
+const ov=openModal(`<div class="stx-body" style="padding-top:22px">
+<div class="stx-head"><span class="dot"></span><b>${esc(m.brand)} •• ${esc(m.last4)}</b><span class="stx-test">TEST MODE</span></div>
+<p class="hint" style="margin-bottom:14px">Saved card · confirm ${formatMoney(amountC)} with your CVC. Real wallets never store CVC — that’s why it’s asked again.</p>
+<div class="stx-card"><div class="stx-in"><input id="cvc" inputmode="numeric" maxlength="4" placeholder="CVC" aria-label="CVC"></div></div>
+<p class="stx-err" id="cvc-err"></p>
+<button class="btn btn-primary btn-block" id="cvc-go" style="margin-top:14px" disabled>Pay ${formatMoney(amountC)}</button>
+<button class="btn btn-ghost btn-block" data-action="close-modal-btn" style="margin-top:8px">Cancel</button></div>`);
+const inp=ov.querySelector('#cvc'),go=ov.querySelector('#cvc-go');
+inp.addEventListener('input',()=>{inp.value=digits(inp.value).slice(0,4);go.disabled=inp.value.length<3;});
+go.addEventListener('click',()=>{
+go.disabled=true;go.innerHTML=`<i class="ph ph-circle-notch spin"></i>Processing…`;
+setTimeout(()=>{
+if(amountC>=50000){show3DS(ov,amountC,r=>{closeModal(ov);onDone({...r,card:{brand:m.brand,last4:m.last4}});});return;}
+closeModal(ov);onDone({ref:'pi_mock_'+Math.random().toString(36).slice(2,10),card:{brand:m.brand,last4:m.last4}});},900);});
+return ov;}
+function offerSaveCard(ref){
+if(!ref||!ref.card)return;
+if(myMethods().some(x=>x.last4===ref.card.last4))return;
+confirmDialog({title:'Save this card?',body:`Add ${ref.card.brand} •• ${ref.card.last4} to your wallet for faster checkout next time (mock).`,ok:'Save card',icon:'credit-card'})
+.then(y=>{if(y){
+myMethods().push({id:uid('pm'),type:'card',brand:ref.card.brand,last4:ref.card.last4,exp:'12/29',isDefault:myMethods().length===0});
+save();toast('Card saved to your wallet','success');
+if(['setMethods'].includes(current().page))renderApp();}});}
+
+/* ---------- AI layer (mock) — swap aiAdapter for a real LLM call ---------- */
+function aiAdapter(prompt,context){return null;}
+const AI_TAG='<span class="st-chip st-blue" style="margin-left:6px">✦ AI (mock)</span>';
+const PHISHES=[
+ {from:'PayWallet Security',body:'⚠ Unusual activity detected. Verify your account within 24 hours or access will be limited: <b>paywallet-verify.demo/secure</b>',tells:['Urgency: “within 24 hours or…”','Look-alike domain: paywallet-<b>verify</b>.demo (real: paywallet.me)','Unsolicited verification link']},
+ {from:'PayWallet Rewards',body:'🎉 You have a $200 cashback waiting! Claim within 48h at <b>paywallet-claims.demo/claim</b>',tells:['Too good to be true: unsolicited $200','Urgency pressure: “within 48h”','Look-alike domain: paywallet-claims.demo']},
+ {from:'PayWallet Support',body:'Your account will be suspended today. Confirm your password & card at <b>paywa1let.demo/support</b>',tells:['Asks for password — real wallets NEVER do','Character-swap domain: paywa<b>1</b>let.demo (digit 1 for l)','Threatening tone']}];
+function showPhishDrill(){
+ const p=PHISHES[Math.floor(Math.random()*PHISHES.length)];
+ const ps=db.phishState||(db.phishState={seen:0,correct:0,drills:[]});
+ ps.drills=ps.drills||[];
+ const drill={id:uid('ph'),from:p.from,tells:p.tells,outcome:null};
+ ps.drills.unshift(drill);ps.seen++;save();
+ const el=document.createElement('div');el.className='sms';
+ el.innerHTML=`<div class="sms-head"><i class="ph-fill ph-warning" style="color:#E8A13A" aria-hidden="true"></i><b>${esc(p.from)}</b><span>now · security drill</span><button aria-label="Dismiss">${ic('x')}</button></div>
+ <div class="sms-body">${p.body}
+ <div style="display:flex;gap:6px;margin-top:10px">
+ <button class="btn btn-danger-soft btn-sm" data-ph="tap" data-id="${drill.id}" style="flex:1">Open link</button>
+ <button class="btn btn-soft btn-sm" data-ph="report" data-id="${drill.id}" style="flex:1">Report 🚩</button></div></div>`;
+ document.body.appendChild(el);
+ requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('in')));
+ el.querySelector('button[aria-label="Dismiss"]').onclick=()=>{el.classList.remove('in');setTimeout(()=>el.remove(),350);};
+ el.querySelectorAll('[data-ph]').forEach(b=>b.addEventListener('click',()=>{
+ const d=(db.phishState.drills||[]).find(x=>x.id===b.dataset.id);
+ d.outcome=b.dataset.ph;
+ db.phishState.correct+=(b.dataset.ph==='report')?1:0;
+ save();el.classList.remove('in');setTimeout(()=>el.remove(),350);
+ showPhishReport(p,b.dataset.ph);}));}
+function showPhishReport(p,outcome){
+ const good=outcome==='report';
+ openModal(`<div class="dlg">
+ <div class="dlg-ic ${good?'':'danger'}">${good?icf('shield-check'):icf('warning')}</div>
+ <h3>${good?'Correct — reported!':'That was a phishing attempt'}</h3>
+ <p>The message was a <b>simulated security drill</b> — PayWallet phishes you on purpose. Here are the tells you ${good?'caught':'should have spotted'}:</p>
+ <div style="text-align:left;margin:12px auto 0;max-width:400px">
+ ${p.tells.map(t=>`<div class="tx-banner b-amber" style="margin:6px 0">${ic('warning')}${t}</div>`).join('')}</div>
+ <p style="margin-top:10px;font-size:12.5px">Real rule: PayWallet never asks for passwords or sends verification links. When unsure, open the app directly — never the link.</p>
+ <button class="btn btn-primary btn-block" data-action="close-modal-btn" style="margin-top:14px">Got it</button></div>`);}
+
+function toast(msg,type='success'){
+const meta={success:['check-circle','var(--green)'],error:['warning-circle','var(--red)'],info:['info','var(--blue)'],security:['shield-check','#E8A13A']}[type]||['info','var(--blue)'];
+const t=document.createElement('div');t.className='toast';t.innerHTML=`<i class="ph-fill ph-${meta[0]}" style="color:${meta[1]}"></i><span>${msg}</span>`;
+ $('#toasts').appendChild(t);setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),260);},3600);}
+function showBanner(head,body){
+const el=document.createElement('div');el.className='sms';
+el.innerHTML=`<div class="sms-head">${icf('bell')}<b>${esc(head)}</b><span>now · simulated</span><button aria-label="Dismiss">${ic('x')}</button></div><div class="sms-body">${body}</div>`;
+document.body.appendChild(el);requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('in')));
+const kill=()=>{el.classList.remove('in');setTimeout(()=>el.remove(),350);};el.querySelector('button').onclick=kill;setTimeout(kill,11000);}
+let modalStack=[];
+function openModal(html,{dismiss=true}={}){
+const ov=document.createElement('div');ov.className='overlay';
+ov.innerHTML=`<div class="modal" role="dialog" aria-modal="true">${dismiss?`<button class="iconbtn m-x" data-action="close-modal-btn" aria-label="Close">${ic('x')}</button>`:''}${html}</div>`;
+ $('#layer').appendChild(ov);requestAnimationFrame(()=>requestAnimationFrame(()=>ov.classList.add('open')));
+if(dismiss)ov.addEventListener('click',e=>{if(e.target===ov)closeModal(ov);});
+modalStack.push(ov);return ov;}
+function closeModal(ov){ov=ov||modalStack[modalStack.length-1];if(!ov)return;modalStack=modalStack.filter(x=>x!==ov);ov.classList.remove('open');setTimeout(()=>ov.remove(),230);}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modalStack.length){const ov=modalStack[modalStack.length-1];if(ov.querySelector('.m-x'))closeModal(ov);}});
+function confirmDialog({title,body,ok='Confirm',okIcon='check',danger=false,cancel='Cancel',icon='question'}){
+return new Promise(res=>{const ov=openModal(`<div class="dlg"><div class="dlg-ic ${danger?'danger':''}">${icf(icon)}</div><h3>${title}</h3><p>${body}</p>
+<div class="dlg-btns"><button class="btn btn-ghost" data-dlg="0" style="border:1px solid var(--line)">${cancel}</button>
+<button class="btn ${danger?'btn-danger':'btn-primary'}" data-dlg="1">${danger?ic('trash'):ic(okIcon)}${ok}</button></div></div>`);
+ov.querySelectorAll('[data-dlg]').forEach(b=>b.addEventListener('click',()=>{closeModal(ov);res(b.dataset.dlg==='1');}));});}
+function securityHold(reasons,amount,cp){
+return new Promise(res=>{const ov=openModal(`<div class="dlg" style="animation:shake .4s ease">
+<div class="dlg-ic warn">${icf('shield-warning')}</div><h3>Payment paused for review</h3>
+<p>Our security check flagged a few things about this ${fmt(amount)} payment to <b>${esc(cp.name)}</b>:</p>
+<div style="text-align:left;margin:14px auto 0;max-width:380px">${reasons.map(r=>`<div class="tx-banner b-amber" style="margin:6px 0">${ic('warning')}${esc(r)}</div>`).join('')}</div>
+<p style="margin-top:10px;font-size:12.5px">This is a <b>simulated</b> check for the demo. Confirm if this was you, or cancel.</p>
+<div class="dlg-btns"><button class="btn btn-danger-soft" data-fr="0">${ic('x-circle')}Cancel payment</button>
+<button class="btn btn-primary" data-fr="1">${ic('shield-check')}It was me — continue</button></div></div>`,{dismiss:false});
+ov.querySelectorAll('[data-fr]').forEach(b=>b.addEventListener('click',()=>{closeModal(ov);res(b.dataset.fr==='1');}));});}
+function runProcessing(steps,label='Processing payment'){
+return new Promise(res=>{const el=document.createElement('div');el.className='proc-wrap';
+el.innerHTML=`<div class="proc">${lwMark(40)}<div style="margin-top:6px">${mockTag()}</div><div class="proc-title">${label}</div>
+<ul class="proc-steps">${steps.map(s=>`<li><span class="ps-ic">${ic('circle-notch','spin')}</span><span>${s}</span></li>`).join('')}</ul>
+<div class="proc-demo">${ic('info')} Simulated processing — no real money moves</div></div>`;
+ $('#layer').appendChild(el);requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('show')));
+const items=[...el.querySelectorAll('li')];let i=0;
+const next=()=>{if(i>0){items[i-1].classList.remove('act');items[i-1].classList.add('done');items[i-1].querySelector('.ps-ic').innerHTML=icf('check-circle');}
+if(i>=items.length){setTimeout(()=>{el.classList.remove('show');setTimeout(()=>{el.remove();res();},280);},420);return;}
+items[i].classList.add('act');i++;setTimeout(next,600+Math.random()*450);};setTimeout(next,380);});}
+function notify(type,title,body,txId){db.notifs.unshift({id:uid('n'),type,title,body,ts:Date.now(),read:false,txId});db.flags.actNew=true;save();syncBadges();}
+function refreshIfVisible(){const p=current().page;if(['home','activity','notifications'].includes(p))renderApp();else syncBadges();}
+function syncBadges(){const n=db.notifs.filter(x=>!x.read).length;
+ $$('.bell-badge').forEach(b=>{b.textContent=n;b.style.display=n?'grid':'none';});
+ $$('.tab-dot').forEach(d=>{d.style.display=db.flags.actNew?'block':'none';});}
+
+const avatar=(u,size=40)=>{const c=u&&u.color?u.color:'#3B5BDB';return `<span class="av" style="width:${size}px;height:${size}px;background:${c}22;color:${c};font-size:${Math.max(10,Math.round(size*.36))}px" aria-hidden="true">${esc(initials(u?u.name:'?'))}</span>`;};
+const avatarOf=(cp,size=44)=>{if(cp&&cp.bank)return `<span class="txav" style="width:${size}px;height:${size}px;border-radius:${Math.round(size*.32)}px;background:var(--blue-050);color:var(--blue)">${ic(cp.icon||'bank','ph-fill')}</span>`;
+return `<span class="txav" style="width:${size}px;height:${size}px;border-radius:${Math.round(size*.32)}px;background:${(cp&&cp.color)||'#3B5BDB'}22;color:${(cp&&cp.color)||'#3B5BDB'}">${esc(initials(cp?cp.name:'?'))}</span>`;};
+function statusChip(s){const m=ST[s];if(!m)return'';return `<span class="st-chip st-${m[2]}">${ic(m[0])}${m[1]}</span>`;}
+function txRow(t){const cp=t.cp||{};let av,title,sub;
+if(t.kind==='deposit'){av=avatarOf({...cp,icon:'plus-circle',bank:true});title='Money added';sub=`From ${cp.name||'bank'} · ${tLabel(t.date)}`;}
+else if(t.kind==='withdrawal'){av=avatarOf({...cp,icon:'bank',bank:true});title='Transfer to bank';sub=`To ${cp.name} · ${tLabel(t.date)}`;}
+else if(t.kind==='request'){av=avatarOf(cp);title=t.dir==='in'?`${cp.name} requested`:`Request to ${cp.name}`;sub=`${t.note||'Payment request'} · ${tLabel(t.date)}`;}
+else{av=avatarOf(cp);title=cp.name||'Payment';sub=`${t.note||((CATS[t.cat]||{}).label||'Payment')} · ${t.payType==='gns'?'G&S':'F&F'} · ${tLabel(t.date)}`;}
+let amt,cls='';
+if(t.kind==='request'&&t.status!=='completed'){amt=fmt(t.amount);cls='mut';}
+else if(t.dir==='in'){amt='+'+fmt(t.amount);cls='pos';}else amt='−'+fmt(t.amount);
+return `<button class="txrow" data-action="open-tx" data-id="${t.id}">${av}<span class="tx-mid"><span class="tx-title">${esc(title)}</span><span class="tx-sub">${esc(sub)}</span></span>
+<span class="tx-right"><span class="tx-amt num ${cls}">${amt}</span>${statusChip(t.status)}</span></button>`;}
+function methodRow(m,on,act){const icon=m.type==='card'?'credit-card':'bank';
+const sub=m.type==='card'?'Instant':'1–3 business days';
+const label=m.type==='card'?`${m.brand} •• ${m.last4}`:`${m.name||'Bank'} •• ${m.last4}`;
+return `<button type="button" class="fund-row ${on?'on':''}" data-action="${act}" data-id="${m.id}">
+<span class="fund-ic">${ic(icon,'ph-fill')}</span><span><b>${label}</b><small>${sub}</small></span>${icf('check-circle','fund-check')}</button>`;}
+function keypad(target){const keys=[['1',''],['2','ABC'],['3','DEF'],['4','GHI'],['5','JKL'],['6','MNO'],['7','PQRS'],['8','TUV'],['9','WXYZ'],['00',''],['0',''],['del']];
+return `<div class="keypad" role="group" aria-label="Amount keypad">${keys.map(k=>`<button type="button" class="key" data-action="key" data-target="${target}" data-k="${k[0]}" aria-label="${k[0]==='del'?'Delete':k[0]}">${k[0]==='del'?ic('backspace'):`<b>${k[0]}</b>${k[1]?`<small>${k[1]}</small>`:''}`}</button>`).join('')}</div>`;}
+const phead=(title,sub='',back=true,right='')=>`<div class="phead">${back?`<button class="iconbtn" data-action="back" aria-label="Back">${ic('caret-left')}</button>`:''}<div><h1>${title}</h1>${sub?`<p>${sub}</p>`:''}</div>${right?`<div class="phead-r">${right}</div>`:''}</div>`;
+function feeBox(rows){return `<div class="fee-box num">${rows.map(r=>`<div class="fr ${r[2]||''}"><span>${r[0]}</span><b>${r[1]}</b></div>`).join('')}</div>`;}
+
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function qrSvg(payload,size=190){
+const N=25,cell=size/N,rnd=mulberry32(hashStr(payload));
+const g=Array.from({length:N},()=>Array(N).fill(0));
+const finder=(r,c)=>{for(let i=-1;i<8;i++)for(let j=-1;j<8;j++){const rr=r+i,cc=c+j;if(rr<0||cc<0||rr>=N||cc>=N)continue;
+g[rr][cc]=2;
+if(i>=0&&i<7&&j>=0&&j<7){const on=(i===0||i===6||j===0||j===6||(i>=2&&i<=4&&j>=2&&j<=4));g[rr][cc]=on?1:2;}}};
+finder(0,0);finder(0,N-7);finder(N-7,0);
+for(let i=8;i<N-8;i++){g[6][i]=(i%2===0)?1:2;g[i][6]=(i%2===0)?1:2;}
+for(let i=N-9;i<=N-5;i++)for(let j=N-9;j<=N-5;j++){const di=i-(N-7),dj=j-(N-7);
+g[i][j]=(di===0||di===4||dj===0||dj===4||(di===2&&dj===2))?1:2;}
+for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(g[r][c]===0)g[r][c]=rnd()<0.44?1:0;
+let rects='';
+for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(g[r][c]===1)
+rects+=`<rect x="${(c*cell).toFixed(2)}" y="${(r*cell).toFixed(2)}" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" rx="${(cell*0.24).toFixed(2)}"/>`;
+return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" role="img" aria-label="Simulated QR code"><g fill="var(--ink)">${rects}</g></svg>`;}
+
+let insCache={days:[]};
+function weeklyChart(days){const sel=insState.sel,W=640,H=252,pl=48,pr=10,pt=34,pb=34;
+const max=niceMax(Math.max(...days.map(d=>d.out),10));const iw=W-pl-pr,ih=H-pt-pb,slot=iw/7,bw=Math.min(46,slot*.5);
+const y=v=>pt+ih*(1-v/max);let g='';
+[0,.5,1].forEach(f=>{const gy=y(max*f);g+=`<line x1="${pl}" x2="${W-pr}" y1="${gy}" y2="${gy}" stroke="#E5EAF5"/><text x="${pl-8}" y="${gy+4}" text-anchor="end" font-size="11" fill="#8B96B0">${Math.round(max*f)>=1000?Math.round(max*f/100)/10+'k':Math.round(max*f)}</text>`;});
+days.forEach((d,i)=>{const x=pl+slot*i+(slot-bw)/2,h=Math.max(3,ih*(d.out/max));
+g+=`<rect x="${x}" y="${y(d.out)}" width="${bw}" height="${h}" rx="9" fill="${sel===i?'var(--blue)':'#D4DDF6'}"/>`;
+if(sel===i&&d.out>0){g+=`<rect x="${x+bw/2-32}" y="${y(d.out)-32}" width="64" height="23" rx="7" fill="var(--blue-deep)"/><text x="${x+bw/2}" y="${y(d.out)-16}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">$${d.out>=1000?(d.out/1000).toFixed(1)+'k':Math.round(d.out)}</text>`;}
+g+=`<text x="${x+bw/2}" y="${H-12}" text-anchor="middle" font-size="12" font-weight="${sel===i?700:500}" fill="${sel===i?'var(--ink)':'#8B96B0'}">${d.lbl}</text>
+<rect data-action="sel-bar" data-i="${i}" x="${pl+slot*i}" y="${pt-20}" width="${slot}" height="${ih+30}" fill="transparent"/>`;});
+return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" role="img" aria-label="Daily spending, last 7 days">${g}</svg>`;}
+function smoothPath(pts){let d=`M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+for(let i=0;i<pts.length-1;i++){const p0=pts[Math.max(0,i-1)],p1=pts[i],p2=pts[i+1],p3=pts[Math.min(pts.length-1,i+2)];
+d+=` C ${(p1[0]+(p2[0]-p0[0])/6).toFixed(1)} ${(p1[1]+(p2[1]-p0[1])/6).toFixed(1)}, ${(p2[0]-(p3[0]-p1[0])/6).toFixed(1)} ${(p2[1]-(p3[1]-p1[1])/6).toFixed(1)}, ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;}return d;}
+function trendChart(pts){const W=640,H=232,pl=48,pr=14,pt=30,pb=30;
+const max=niceMax(Math.max(...pts.map(p=>p.v),10));const iw=W-pl-pr,ih=H-pt-pb;
+const X=i=>pl+iw*(i/(pts.length-1)),Y=v=>pt+ih*(1-v/max);let g='';
+[0,.5,1].forEach(f=>{const gy=Y(max*f);g+=`<line x1="${pl}" x2="${W-pr}" y1="${gy}" y2="${gy}" stroke="#E5EAF5"/><text x="${pl-8}" y="${gy+4}" text-anchor="end" font-size="11" fill="#8B96B0">${Math.round(max*f)>=1000?Math.round(max*f/100)/10+'k':Math.round(max*f)}</text>`;});
+const P=pts.map((p,i)=>[X(i),Y(p.v)]),line=smoothPath(P);
+g+=`<path d="${line} L ${X(pts.length-1)} ${Y(0)} L ${X(0)} ${Y(0)} Z" fill="rgba(59,91,219,.1)"/><path d="${line}" fill="none" stroke="var(--blue)" stroke-width="3" stroke-linecap="round"/>`;
+pts.forEach((p,i)=>{g+=`<circle cx="${X(i)}" cy="${Y(p.v)}" r="${i===pts.length-1?6:4.5}" fill="#fff" stroke="var(--blue)" stroke-width="3"/><text x="${X(i)}" y="${H-9}" text-anchor="middle" font-size="12" fill="#8B96B0">${p.m}</text>`;});
+const lp=pts[pts.length-1];
+g+=`<text x="${X(pts.length-1)-4}" y="${Y(lp.v)-14}" text-anchor="end" font-size="12.5" font-weight="700" fill="var(--ink)">$${lp.v>=1000?(lp.v/1000).toFixed(1)+'k':Math.round(lp.v)}</text>`;
+return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" role="img" aria-label="Monthly spending trend">${g}</svg>`;}
+function donutChart(cats,total){const C=2*Math.PI*64;let acc=0,g='';
+cats.forEach(c=>{const frac=total?c.v/total:0,len=Math.max(.5,frac*C-2.5);
+g+=`<circle cx="100" cy="100" r="64" fill="none" stroke="${c.c}" stroke-width="21" stroke-dasharray="${len.toFixed(2)} ${(C-len).toFixed(2)}" stroke-dashoffset="${(-acc).toFixed(2)}"/>`;acc+=frac*C;});
+return `<svg viewBox="0 0 200 200" style="width:170px;height:170px" role="img" aria-label="Spending by category"><g transform="rotate(-90 100 100)">${g}</g>
+<text x="100" y="96" text-anchor="middle" font-size="21" font-weight="700" fill="var(--ink)">$${Math.round(total)>=1000?(total/1000).toFixed(1)+'k':Math.round(total)}</text>
+<text x="100" y="116" text-anchor="middle" font-size="11" fill="#8B96B0">spent</text></svg>`;}
+
+const TOPNAV=['home','send','request','activity','insights','profile'];
+let stack=[{page:'auth'}];
+const current=()=>stack[stack.length-1];
+function navTo(page,params){
+if(TOPNAV.includes(page)){
+if(page==='send')flowSend=freshSend();
+if(page==='request')flowReq=freshReq();
+if(page==='activity'){db.flags.actNew=false;save();actLoading=true;setTimeout(()=>{actLoading=false;if(current().page==='activity')renderApp();},420);}
+stack=[{page,params:params||{}}];}
+else stack.push({page,params:params||{}});
+renderApp();}
+function back(){if(stack.length>1){stack.pop();renderApp();}else{stack=[{page:'home'}];renderApp();}}
+let authMode='login',authUser=null,authCode='',authTries=0;
+let flowSend=null,flowReq=null,flowTr=null,flowAdd=null,editColor=null,actLoading=false;
+let actFilter={q:'',type:'all',status:'all'};
+let insState={seg:'week',sel:null};
+let successView=null,simScheduled=false,sendQuery='',rqQuery='',receiveAmtC=0,friendsSyncing=false;
+const freshSend=()=>({step:'recipient',to:null,c:0,note:'',methodId:'wallet',payType:'ff',payIn4:false,requestId:null});
+const freshReq=()=>({step:'pick',sel:[],c:0,note:''});
+const freshFlow=()=>({c:0,methodId:null});
+const genCode=()=>String(Math.floor(100000+Math.random()*900000));
+const maskPhone=p=>p?(p.slice(0,-4).replace(/[0-9]/g,'•')+p.slice(-4)):'your phone';
+const payLink=()=>{return `https://paywallet.me/alexm-demo`+(receiveAmtC?`/${(receiveAmtC/100).toFixed(2)}`:'');};
+
+function AuthPage(){
+let inner='';
+if(authMode==='2fa'){
+inner=`<div style="text-align:center;margin-bottom:16px"><div class="empty-ic" style="margin:0 auto 12px">${icf('device-mobile')}</div>
+<h2 style="font-size:21px">Verify it’s you</h2>
+<p class="hint" style="margin-top:5px">We texted a 6-digit code to ${esc(maskPhone(authUser.phone||''))}.<br>Watch for the simulated message banner.</p></div>
+<form data-form="twofa-login" novalidate>
+<div class="field"><label for="code">Security code</label><input id="code" name="code" class="code-input" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••"></div>
+<p class="err-msg" data-err="code"></p>
+<button class="btn btn-primary btn-block" data-busy="Verifying…">Verify & continue</button></form>
+<div style="display:flex;justify-content:space-between;margin-top:14px">
+<button class="btn btn-ghost btn-sm" data-action="auth-tab" data-v="login">${ic('caret-left')}Back</button>
+<button class="btn btn-ghost btn-sm" data-action="resend-code">${ic('arrows-clockwise')}Resend code</button></div>`;}
+else if(authMode==='login'){
+inner=`<div class="tabs"><button class="act" data-action="auth-tab" data-v="login">Log in</button><button data-action="auth-tab" data-v="register">Sign up</button></div>
+<form data-form="login" novalidate>
+<div class="field"><label for="lid">Email or mobile number</label><input id="lid" name="id" autocomplete="username" placeholder="you@paywallet.demo"></div>
+<p class="err-msg" data-err="id"></p>
+<div class="field"><label for="lpw">Password</label><div class="pw-wrap"><input id="lpw" name="pw" type="password" autocomplete="current-password" placeholder="••••••••"><button type="button" class="pw-eye" data-action="pw-eye" aria-label="Show password">${ic('eye')}</button></div></div>
+<p class="err-msg" data-err="pw"></p>
+<button class="btn btn-primary btn-block" data-busy="Logging in…">Log In</button></form>
+<div class="divider-or">or</div>
+<button class="btn btn-soft btn-block" data-action="auth-demo">${icf('sparkle')}Use the demo account — Alex Morgan</button>
+<p class="hint" style="text-align:center;margin-top:14px">Demo login: <b>demo-user@paywallet.demo</b> / <b>demo1234</b> · 2-step verification is on (simulated SMS).</p>`;}
+else{
+inner=`<div class="tabs"><button data-action="auth-tab" data-v="login">Log in</button><button class="act" data-action="auth-tab" data-v="register">Sign up</button></div>
+<form data-form="register" novalidate>
+<div class="field"><label for="rname">Your name</label><input id="rname" name="name" autocomplete="name" placeholder="Jordan Lee"></div>
+<p class="err-msg" data-err="name"></p>
+<div class="field"><label for="remail">Email</label><input id="remail" name="email" type="email" autocomplete="email" placeholder="you@paywallet.demo"></div>
+<p class="err-msg" data-err="email"></p>
+<div class="field"><label for="rphone">Mobile number</label><input id="rphone" name="phone" type="tel" autocomplete="tel" placeholder="+1 (555) 555-0100"></div>
+<p class="err-msg" data-err="phone"></p>
+<div class="field"><label for="rpw">Password</label><div class="pw-wrap"><input id="rpw" name="pw" type="password" data-input="reg-pw" autocomplete="new-password" placeholder="8+ characters"><button type="button" class="pw-eye" data-action="pw-eye" aria-label="Show password">${ic('eye')}</button></div>
+<div class="strength" id="pw-str"><span></span><span></span><span></span><span></span><em>—</em></div></div>
+<p class="err-msg" data-err="pw"></p>
+<label class="terms"><input type="checkbox" name="terms"><span>I understand this is a <b>mock demo</b> inspired by real payment platforms. No real money, accounts, or third-party services are involved, and data stays in my browser.</span></label>
+<p class="err-msg" data-err="terms"></p>
+<button class="btn btn-primary btn-block" data-busy="Creating account…">Create account</button></form>`;}
+return `<div class="auth-wrap">
+<div class="auth-panel"><div>
+<div style="display:flex;align-items:center;gap:10px;font-style:italic;font-weight:800;font-size:28px">${lwMark(36)}${lwWord('font-size:28px')}</div>
+<p style="margin-top:10px">${mockTag()} <span style="color:#A9B8E6;font-size:12.5px">Original demo · inspired by real payment platforms</span></p>
+<h2 style="font-size:36px;line-height:1.14;margin:24px 0 10px;max-width:440px">Your money, one wallet.</h2>
+<p style="color:#A9B8E8;font-size:15.5px;max-width:400px">One balance. F&F or G&S fees before you confirm. Pay in 4, Savings that earn, and a card layer you can try to break.</p>
+<div class="payfeat">${icf('wallet')}<div><b>One wallet, one balance</b><p>Your email is your account — nothing to link, ever.</p></div></div>
+<div class="payfeat">${icf('users-three')}<div><b>F&F & G&S payments</b><p>The real fee choice: personal free, purchases protected.</p></div></div>
+<div class="payfeat">${icf('calendar-check')}<div><b>Pay in 4 & Savings</b><p>Split purchases interest-free; park cash at 4.30% APY.</p></div></div>
+<div class="payfeat">${icf('credit-card')}<div><b>Breakable card flow</b><p>Test cards: succeed, decline, run dry, or trigger 3D Secure.</p></div></div>
+<div class="auth-foot">${icf('info')} PayWallet is an original design demo inspired by real payment platforms — not affiliated with PayPal or Stripe. People, balances, and payments are fictional and simulated locally. No network, no real money.</div>
+</div></div>
+<div><div class="auth-card">
+<div class="auth-brand">${lwMark(28)}${lwWord('font-size:24px')} ${mockTag()}</div>
+<p class="auth-sub">Log in to your PayWallet</p>
+ ${inner}
+</div></div></div>`;}
+
+const unreadBadge=()=>{const n=db.notifs.filter(x=>!x.read).length;return `<span class="bell-badge" style="display:${n?'grid':'none'}">${n}</span>`;};
+function shellHTML(content){const u=me();
+const items=[['home','house','Home'],['send','paper-plane-tilt','Send'],['request','hand-coins','Request'],['activity','clock-counter-clockwise','Activity'],['insights','chart-pie-slice','Insights'],['profile','user-circle','Profile']];
+return `<div class="shell">
+<aside class="sidebar">
+<div class="side-top"><span class="t-brand">${lwMark(24)}${lwWord('font-size:17px')} ${mockTag()}</span>
+<button class="iconbtn" data-action="nav" data-page="notifications" aria-label="Notifications">${ic('bell')}${unreadBadge()}</button></div>
+<nav class="side-nav" aria-label="Main">${items.map(p=>`<button class="snav-i ${current().page===p[0]?'act':''}" data-action="nav" data-page="${p[0]}">${ic(p[1])}${p[2]}</button>`).join('')}</nav>
+<div class="side-foot">
+<div class="sec-chip"><span class="sec-dot"></span>Security checks active</div>
+<button class="snav-i" style="margin-bottom:8px" data-action="nav" data-page="receive">${ic('qr-code')}Receive & connect</button>
+<button class="user-mini" data-action="nav" data-page="profile">${avatar(u,36)}<span><b>${esc(u.name)}</b><small>${esc(u.email)}</small></span></button>
+<button class="side-logout" data-action="logout">${ic('sign-out')}Log out</button>
+<p style="color:var(--faint);font-size:10.5px;margin-top:12px;text-align:center">Mock demo · no real money</p>
+</div></aside>
+<div class="main">
+<header class="topbar">
+<button class="iconbtn" data-action="nav" data-page="profile" aria-label="Profile">${avatar(u,34)}</button>
+<span class="t-brand">${lwMark(22)}${lwWord('font-size:17px')} ${mockTag()}</span>
+<span class="t-right"><button class="iconbtn" data-action="guide" aria-label="Demo guide">${ic('question')}</button>
+<button class="iconbtn" data-action="nav" data-page="notifications" aria-label="Notifications">${ic('bell')}${unreadBadge()}</button></span>
+</header>
+<main class="page" id="page">${content}</main>
+<nav class="tabbar" aria-label="Main">${items.map(p=>`<button class="tab-i ${current().page===p[0]?'act':''}" data-action="nav" data-page="${p[0]}" aria-label="${p[2]}">${current().page===p[0]?icf(p[1]):ic(p[1])}${p[2]}${p[0]==='activity'?'<span class="tab-dot"></span>':''}</button>`).join('')}</nav>
+</div></div>`;}
+
+function HomePage(u){
+const hidden=db.settings.hideBalance;
+const h=new Date().getHours();const greet=h<12?'Good morning':h<18?'Good afternoon':'Good evening';
+const pend=db.reqs.filter(r=>r.status==='pending'&&(r.to===u.id||r.from===u.id)).slice(0,4);
+const recent=db.tx.filter(t=>t.uid===u.id).slice(0,5);
+const activePlan=(db.plans||[]).find(p=>p.remaining.some(r=>!r.paid));
+return `<div class="home-grid"><div>
+<div class="greet"><p>${greet},</p><h1>${esc(u.name.split(' ')[0])} ${u.verified?icf('seal-check','').replace('<i','<i style="color:var(--blue);font-size:19px"'):''}</h1></div>
+<div class="bal-card">
+<div class="bal-top"><span class="bal-label">PayWallet balance</span>
+<button class="bal-eye" data-action="toggle-balance" aria-label="${hidden?'Show':'Hide'} balance">${ic(hidden?'eye-slash':'eye')}</button></div>
+<div class="bal-num num">${hidden?'••••••':fmt(u.balance)}</div>
+<div class="bal-row"><span class="bal-tag">${ic('shield-check')}2-step verification</span><span class="bal-tag">${ic('info')}Demo funds</span><span class="bal-tag">${ic('credit-card')}${myMethods().length} linked</span></div>
+</div>
+<div class="search-row" style="margin-bottom:12px">${ic('sparkle')}<input data-input="ai-cmd" placeholder='✦ Try: "pay jordan 25 for pizza" — then Enter' aria-label="AI pay command"></div>
+<div class="quick-grid">
+<button class="qk" data-action="nav" data-page="send"><span class="qk-ic">${icf('paper-plane-tilt')}</span>Send</button>
+<button class="qk" data-action="nav" data-page="request"><span class="qk-ic">${icf('hand-coins')}</span>Request</button>
+<button class="qk" data-action="quick-move" data-type="add"><span class="qk-ic">${icf('plus-circle')}</span>Add money</button>
+<button class="qk" data-action="quick-move" data-type="transfer"><span class="qk-ic">${icf('bank')}</span>Transfer</button>
+</div>
+<button class="rc-strip" data-action="nav" data-page="receive">
+<span class="rc-ic">${ic('qr-code','ph-fill')}</span>
+<span>Get paid<small>Your paywallet.me link, QR code & find friends</small></span>
+ ${ic('caret-right','caret')}</button>
+ ${activePlan?`<button class="rc-strip" data-action="nav" data-page="plans">
+<span class="rc-ic" style="background:var(--stripe)">${ic('calendar-check','ph-fill')}</span>
+<span>Pay in 4<small>${(()=>{const n=activePlan.remaining.find(r=>!r.paid);return `Next: ${fmt(n.amt)} on ${dLabel(n.due)} · ${activePlan.remaining.filter(r=>!r.paid).length} left`;})()}</small></span>
+ ${ic('caret-right','caret')}</button>`:''}
+<button class="sec-strip" data-action="nav" data-page="savings"><span style="color:var(--green)">${ic('piggy-bank')}</span><span style="color:var(--ink)">Savings <em>· ${fmt((u.savings||{amt:0}).amt)} earning 4.30% APY (simulated)</em></span>${ic('caret-right','caret')}</button>
+<button class="sec-strip" data-action="nav-settings" data-page="setSecurity"><span class="sec-dot"></span>${ic('shield-check')}Security checks <em>· ${({low:'Low',standard:'Standard',high:'High'})[u.settings.secSens||'standard']} sensitivity</em>${ic('caret-right','caret')}</button>
+ ${pend.length?`<div class="sec-h"><h2>Requests</h2><button class="link" data-action="nav" data-page="activity">View all</button></div>
+<div class="card list-card">${pend.map(r=>{const inc=r.to===u.id,other=userById(inc?r.from:r.to);
+return `<div class="req-row">${avatar(other,42)}<span class="tx-mid"><span class="tx-title">${esc(other.name)} ${inc?'requested':'· your request'}</span><span class="tx-sub">${fmt(r.amount)} · ${esc(r.note||'Payment request')}</span></span>
+<span class="req-btns">${inc?`<button class="btn btn-primary btn-sm" data-action="pay-req" data-id="${r.id}">Pay</button><button class="btn btn-ghost btn-sm" data-action="decline-req" data-id="${r.id}">Decline</button>`:`<button class="btn btn-soft btn-sm" data-action="remind-req" data-id="${r.id}">Remind</button><button class="btn btn-ghost btn-sm" data-action="cancel-req" data-id="${r.id}">Cancel</button>`}</span></div>`;}).join('')}</div>`:''}
+ ${!u.settings.guideDismissed?`<div class="tip-card">${icf('sparkle')}<div><b style="font:600 14px var(--fb)">First time here?</b>
+<p>Type <b>"pay jordan 25 for pizza"</b> in the ✦ bar. Pick <b>F&F or G&S</b> to compare fees. Break the card flow with test cards. Watch for <b>phishing drills</b>.</p>
+<button class="btn btn-soft btn-sm" data-action="guide">Open demo guide</button>
+<button class="btn btn-ghost btn-sm" data-action="dismiss-guide">Dismiss</button></div></div>`:''}
+</div><div>
+<div class="sec-h" style="margin-top:8px"><h2>Recent activity</h2><button class="link" data-action="nav" data-page="activity">See all</button></div>
+<div class="card list-card">${recent.length?recent.map(txRow).join(''):`<div class="empty"><div class="empty-ic">${ic('clock-counter-clockwise')}</div><b>No activity yet</b>Send your first payment to see it here.</div>`}</div>
+</div></div>`;}
+
+function sendBalLine(){const f=flowSend;if(!f)return'';const u=me();const m=methodById(f.methodId);
+if(f.c<=0)return `<div class="bal-live"><span>PayWallet balance</span><b class="num">${fmt(u.balance)}</b></div>`;
+const q=feeQuote(f.payType,f.methodId,f.c);
+if(m.type==='wallet'){const after=u.balance-(f.payIn4?Math.round(f.c/4):q.youPay)/100;const ok=after>=-1e-9;
+return `<div class="bal-live ${ok?'':'over'}"><span>Balance after${f.payIn4?' (today)':''}</span><b class="num">${ok?fmt(after):'Insufficient funds'}</b>${ok?'':'<em>add money or pay with a card</em>'}</div>`;}
+return `<div class="bal-live"><span>PayWallet balance</span><b class="num">${fmt(u.balance)}</b><em>unchanged · charged to ${esc(methodLabel(f.methodId))}</em></div>`;}
+function reqTotalLine(){const f=flowReq;if(!f)return'';const n=f.sel.length;
+if(f.c<=0)return `<div class="bal-live"><span>Total request</span><b class="num">${fmt(0)}</b></div>`;
+if(n>1)return `<div class="bal-live"><span>Total request</span><b class="num">${fmt(f.c/100)}</b><em>${fmt(f.c/n/100)} from each of ${n} people</em></div>`;
+return `<div class="bal-live"><span>Total request</span><b class="num">${fmt(f.c/100)}</b><em>from ${esc(nameOf(f.sel[0]))}</em></div>`;}
+function reqRosterHTML(f){const n=f.sel.length;if(!n)return'';const each=f.c/n/100;
+return f.sel.map(id=>{const p=findCp(id)||{};
+return `<div class="people-row">${avatar(p,38)}
+<span style="min-width:0"><b>${esc(p.name||'')}</b><small>${esc(p.email||'')}</small></span>
+<span class="amt num">${fmt(each)}</span></div>`;}).join('');}
+function trLive(){const f=flowTr;if(!f)return'';const u=me();const fee=f.methodId?transferFee(f.methodId,f.c):0;
+if(f.c<=0)return `<div class="bal-live"><span>PayWallet balance</span><b class="num">${fmt(u.balance)}</b></div>`;
+const after=u.balance-(f.c+fee)/100;const ok=after>=-1e-9;
+return `<div class="bal-live ${ok?'':'over'}"><span>Balance after transfer</span><b class="num">${ok?fmt(after):'Insufficient funds'}</b>${ok?'':'<em>transfer a smaller amount</em>'}</div>`;}
+function addLive(){const f=flowAdd;if(!f)return'';const u=me();
+if(f.c<=0)return `<div class="bal-live"><span>PayWallet balance</span><b class="num">${fmt(u.balance)}</b></div>`;
+return `<div class="bal-live"><span>Balance after adding</span><b class="num">${fmt(u.balance+f.c/100)}</b></div>`;}
+
+function sendPreview(){const f=flowSend;
+const head=`<div class="chart-title"><h3>Receipt preview</h3><span>updates live</span></div>`;
+if(!f.to)return `<div class="card pad">${head}<div class="empty" style="padding:36px 10px"><div class="empty-ic">${ic('receipt')}</div><b>Nothing to preview yet</b>Pick a recipient and the receipt builds itself here.</div></div>`;
+const q=feeQuote(f.payType,f.methodId,f.c);
+return `<div class="card pad">${head}
+<div style="text-align:center;margin:12px 0 6px">${avatarOf(f.to,52)}</div>
+<p style="text-align:center;font:600 14.5px var(--fb)">${esc(f.to.name)}</p>
+<p style="text-align:center;color:var(--muted);font-size:12.5px;margin-bottom:10px">${esc(f.to.email||f.to.phone||'new recipient')}</p>
+<p style="text-align:center;font:700 34px var(--fb)" class="num">${fmt(f.c/100)}</p>
+<div class="review-card" style="margin-top:12px">
+<div class="rrow"><span>Type</span><b>${f.payType==='gns'?'Goods & Services':'Friends & Family'}${f.payIn4?' · Pay in 4':''}</b></div>
+<div class="rrow"><span>From</span><b>${esc(methodLabel(f.methodId))}</b></div>
+<div class="rrow"><span>Fee</span><b>${q.fee?fmt(q.fee/100)+' ('+(q.payer==='receiver'?'recipient pays':'card fee')+')':'Free'}</b></div>
+<div class="rrow tot"><span>${f.payIn4?'Today’s installment':'You pay'}</span><b>${fmt((f.payIn4?Math.round(f.c/4):q.youPay)/100)}</b></div></div>
+ ${f.payType==='gns'?`<div class="shield-note">${icf('shield-check')}Buyer Protection included · 1% cashback</div>`:''}
+<div style="text-align:center;margin-top:14px"><span class="demo-note">${ic('info')}Simulated payment</span></div></div>`;}
+function renderPreviewAside(){const a=$('.flow-preview');if(a)a.innerHTML=current().page==='send'?sendPreview():reqPreview();}
+function SendPage(){const f=flowSend;
+const wrap=inner=>`<div class="flow-grid"><div>${inner}</div><aside class="flow-preview">${sendPreview()}</aside></div>`;
+if(f.step==='recipient'){
+return wrap(`<div class="card pad">${phead('Send money','Pay with an email, phone or name',false)}
+<div class="search-row">${ic('magnifying-glass')}<input id="send-q" data-input="send-search" value="${esc(sendQuery)}" placeholder="Name, email or phone" autocomplete="off" aria-label="Search recipients"></div>
+<div id="send-results">${sendResults(sendQuery)}</div></div>`);}
+if(f.step==='amount'){
+return wrap(`<div class="card pad">
+<div class="cp-chip">${avatarOf(f.to,32)}<span><b>${esc(f.to.name)}</b> <small>${esc(f.to.email||'new recipient')}</small></span>
+<button data-action="step-back" data-s="recipient" aria-label="Change recipient">${ic('x')}</button></div>
+<div class="amount-view"><span class="cur">$</span><span class="amt-num num" id="amt">${amtStr(f.c)}</span></div>
+ ${keypad('send')}
+<div class="quick-amt"><button type="button" data-action="quick-add" data-v="2000">+$20</button><button type="button" data-action="quick-add" data-v="5000">+$50</button><button type="button" data-action="quick-add" data-v="10000">+$100</button><button type="button" data-action="amt-max">Max</button><button type="button" data-action="amt-clear">Clear</button></div>
+<div id="bal-line">${sendBalLine()}</div>
+<div class="field" style="margin-top:10px"><label for="snote">Note (optional)</label><input id="snote" data-input="send-note" value="${esc(f.note)}" placeholder="What’s it for?" maxlength="80"></div>
+<div class="group-lbl">Pay with</div>
+<button type="button" class="fund-row ${f.methodId==='wallet'?'on':''}" data-action="fund" data-id="wallet">
+<span class="fund-ic">${ic('wallet','ph-fill')}</span><span><b>PayWallet balance</b><small>Available ${fmt(me().balance)} · free</small></span>${icf('check-circle','fund-check')}</button>
+ ${myMethods().map(mm=>methodRow(mm,f.methodId===mm.id,'fund')).join('')}
+<button type="button" class="fund-row ${f.methodId==='card'?'on':''}" data-action="fund" data-id="card">
+<span class="fund-ic">${ic('credit-card','ph-fill')}</span><span><b>New card · Stripe-style</b><small>Instant · test cards welcome</small></span>${icf('check-circle','fund-check')}</button>
+<div id="fee-line">${f.c>0?sendFeeLine():''}</div>
+<p class="err-msg" id="amt-err"></p>
+<button class="btn btn-primary btn-block" data-action="to-review" style="margin-top:6px">Next: review & pay</button>
+</div>`);}
+const q=feeQuote(f.payType,f.methodId,f.c);const u=me();
+const inst=Math.round(f.c/4);
+const ptCard=(v,name,desc,feeLine,prot)=>`<button type="button" class="pt-card ${f.payType===v&&!f.payIn4?'on':''}" data-action="set-paytype" data-v="${v}">
+<b>${name}${prot?'<span class="pt-badge st-green">Buyer Protection</span>':''}</b><small>${desc}</small>
+<span class="pt-fee"><span>${feeLine[0]}</span><b class="num">${feeLine[1]}</b></span></button>`;
+const mNow=methodById(f.methodId);
+const payPart=mNow.type==='card'
+?`<div style="text-align:center;padding:16px 0 6px">
+<button class="btn btn-primary btn-block" data-action="pay-card">${ic('credit-card')}Pay ${fmt((f.payIn4?inst:q.youPay)/100)} with card</button>
+<p class="hint" style="text-align:center;margin-top:8px">Mock Stripe-style processing · 3D Secure may apply · test cards welcome</p></div>`
+:`<div class="hold-wrap">
+<button class="hold-btn" id="hold-btn" aria-label="Press and hold to pay">
+<svg class="ring" viewBox="0 0 100 100"><circle class="ring-bg" cx="50" cy="50" r="46"/><circle class="ring-fg" cx="50" cy="50" r="46"/></svg>
+<span class="hold-inner">${icf('fingerprint')}</span></button>
+<p class="hold-cap">Hold to pay ${fmt((f.payIn4?inst:q.youPay)/100)}${f.payIn4?' — installment 1 of 4':''}</p>
+<p class="hold-cap2">${f.payType==='gns'?'Goods & Services · Buyer Protection applies':'Friends & Family'} · demo — no real money</p></div>`;
+return wrap(`<div class="card pad">
+ ${phead('Review & pay','Choose how this payment counts',true)}
+<div class="review-card">
+<div class="rrow"><span>To</span><b>${esc(f.to.name)} · ${esc(f.to.email||f.to.phone||'new')}</b></div>
+<div class="rrow"><span>Amount</span><b class="num">${fmt(f.c/100)}</b></div>
+<div class="rrow"><span>From</span><b>${esc(methodLabel(f.methodId))}</b></div></div>
+<div class="group-lbl">Payment type</div>
+ ${ptCard('ff','Friends & Family','Personal payments to people you trust. No buyer protection.',q.payType==='ff'?[q.fee?'You pay (incl. card fee)':'You pay',fmt(q.youPay/100)]:['You pay',fmt(feeQuote('ff',f.methodId,f.c).youPay/100)],false)}
+ ${ptCard('gns','Goods & Services','For buying something. Fee paid by the recipient. 1% cashback.',['Recipient gets',fmt(feeQuote('gns',f.methodId,f.c).theyGet/100)],true)}
+ ${f.payType==='gns'&&f.c>=3000&&f.c<=150000?`<button type="button" class="pt-card ${f.payIn4?'on':''}" data-action="set-p4">
+<b>Pay in 4<span class="pt-badge st-blue">0% interest</span></b>
+<small>4 interest-free payments — 25% today, then every 2 weeks. Merchant paid in full.</small>
+<span class="pt-fee"><span>Today’s payment</span><b class="num">${fmt(inst/100)}</b></span></button>`:''}
+<div class="review-card" style="margin-top:4px">
+<div class="rrow"><span>You pay${f.payIn4?' today':''}</span><b class="num">${fmt((f.payIn4?inst:q.youPay)/100)}</b></div>
+<div class="rrow"><span>Recipient gets</span><b class="num">${fmt(q.theyGet/100)}</b></div>
+ ${q.fee?`<div class="rrow"><span>Fee</span><b class="num">${fmt(q.fee/100)} · paid by ${q.payer==='receiver'?'recipient':'you (card)'}</b></div>`:''}
+ ${f.payType==='gns'?`<div class="rrow"><span>Cashback (1%)</span><b class="num" style="color:var(--green)">+${fmt(f.c*0.01/100)}</b></div>`:''}
+ ${f.methodId==='wallet'?`<div class="rrow"><span>Balance after${f.payIn4?' (today)':''}</span><b class="num" style="color:${u.balance-(f.payIn4?inst:q.youPay)/100>=0?'var(--ink)':'var(--red)'}">${fmt(u.balance-(f.payIn4?inst:q.youPay)/100)}</b></div>`:''}
+ ${f.note?`<div class="rrow"><span>Note</span><b>“${esc(f.note)}”</b></div>`:''}</div>
+ ${f.payIn4?`<div class="fee-box num">
+<div class="fr"><span>Today — installment 1 of 4</span><b>${fmt(inst/100)}</b></div>
+<div class="fr"><span>In 2 weeks</span><b>${fmt(inst/100)}</b></div>
+<div class="fr"><span>In 4 weeks</span><b>${fmt(inst/100)}</b></div>
+<div class="fr tot"><span>In 6 weeks · total</span><b>${fmt(f.c/100)}</b></div></div>
+<p class="hint" style="text-align:center;margin-bottom:6px">You repay over 6 weeks — interest-free, no fees (mock).</p>`:''}
+<div class="shield-note">${icf('shield-check')}Security checks pause unusual payments before they go out.</div>
+ ${payPart}
+</div>`);}
+function sendFeeLine(){const f=flowSend,q=feeQuote(f.payType,f.methodId,f.c);
+return feeBox([['Recipient gets',fmt(q.theyGet/100)],[q.fee?'Fee ('+(q.payer==='receiver'?'3.49% + $0.49, recipient':'2.9% + $0.30, you')+' pays)':'Fee',q.fee?fmt(q.fee/100):'Free'],['You pay',fmt(q.youPay/100),'tot']]);}
+const cpRow=u=>`<button class="cp-row" data-action="pick-cp" data-id="${u.id}">${avatar(u,42)}<span><b>${esc(u.name)}</b><small>${esc(u.email||u.phone||'new')}</small></span>${ic('caret-right','caret')}</button>`;
+function sendResults(q){q=q.trim().toLowerCase();const pool=[...db.users.filter(u=>u.id!==me().id),...db.contacts];
+if(!q){const ids=[],rec=[];
+for(const t of db.tx){const c=t.cp;if(c&&c.id&&findCp(c.id)&&!ids.includes(c.id)){ids.push(c.id);rec.push(findCp(c.id));if(rec.length>=4)break;}}
+return `${rec.length?`<div class="group-lbl">Recents</div>${rec.map(cpRow).join('')}`:''}
+<div class="group-lbl">Your contacts</div>${pool.slice(0,8).map(cpRow).join('')}
+<button class="cp-row" data-action="add-new-cp"><span class="txav" style="background:var(--gray-bg);color:var(--ink-2)">${ic('user-plus','ph-fill')}</span><span><b>Pay someone new</b><small>Use any email or phone number</small></span>${ic('caret-right','caret')}</button>
+<button class="cp-row" data-action="nav" data-page="friends"><span class="txav" style="background:var(--blue-050);color:var(--blue)">${ic('users','ph-fill')}</span><span><b>Find people you know</b><small>Contact matching (simulated)</small></span>${ic('caret-right','caret')}</button>`;}
+const qd=digits(q);
+const matches=pool.filter(u=>(u.name||'').toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q)||(qd.length>=4&&digits(u.phone).includes(qd)));
+let out='';
+if(matches.length)out+=`<div class="group-lbl">Results</div>${matches.map(cpRow).join('')}`;
+const isEmail=/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(q),isPhone=digits(q).length>=7;
+if(!matches.length||isEmail||isPhone)out+=`<div class="group-lbl">New recipient</div>
+<button class="cp-row" data-action="add-new-cp" data-q="${esc(q)}"><span class="txav" style="background:var(--blue-050);color:var(--blue)">${ic('user-plus','ph-fill')}</span>
+<span><b>${esc(q)}</b><small>${isEmail?'Pay this email address':isPhone?'Pay this phone number':'Create a new recipient'}</small></span>${ic('caret-right','caret')}</button>`;
+return out||`<div class="empty"><div class="empty-ic">${ic('magnifying-glass')}</div><b>No one found</b>Try a name, email or phone.</div>`;}
+
+function reqPreview(){const f=flowReq,head=`<div class="chart-title"><h3>Request preview</h3><span>updates live</span></div>`;
+if(!f.sel.length)return `<div class="card pad">${head}<div class="empty" style="padding:36px 10px"><div class="empty-ic">${ic('hand-coins')}</div><b>No one selected</b>Choose people to preview the split.</div></div>`;
+const each=f.c/f.sel.length;
+return `<div class="card pad">${head}
+<p style="text-align:center;font:700 34px var(--fb)" class="num">${fmt(f.c/100)}</p>
+<p style="text-align:center;color:var(--muted);font-size:13px">${f.sel.length>1?`${fmt(each/100)} from each of ${f.sel.length} people`:`from ${esc(nameOf(f.sel[0]))}`}</p>
+<div class="review-card" style="margin-top:12px">
+ ${f.sel.map(id=>`<div class="rrow"><span>${esc(nameOf(id))}</span><b class="num">${fmt(each/100)}</b></div>`).join('')}
+ ${f.note?`<div class="rrow"><span>Note</span><b>“${esc(f.note)}”</b></div>`:''}</div>
+<div style="text-align:center;margin-top:14px"><span class="demo-note">${ic('info')}Simulated request</span></div></div>`;}
+function RequestPage(){const f=flowReq;
+const wrap=inner=>`<div class="flow-grid"><div>${inner}</div><aside class="flow-preview">${reqPreview()}</aside></div>`;
+if(f.step==='pick'){
+return wrap(`<div class="card pad">${phead('Request money','Send a request they can pay in one tap',false)}
+ ${f.sel.length?`<div class="chips" style="margin-bottom:10px">${f.sel.map(id=>`<button class="chip act" data-action="rq-pick" data-id="${id}">${esc((findCp(id)||{}).name||'')} ${ic('x')}</button>`).join('')}</div>`:''}
+<div class="search-row">${ic('magnifying-glass')}<input id="rq-q" data-input="rq-search" value="${esc(rqQuery)}" placeholder="Name, email or phone" autocomplete="off" aria-label="Search people"></div>
+<div id="rq-results">${rqResults(rqQuery)}</div></div>`);}
+const n=f.sel.length,each=n?f.c/n:0;
+return wrap(`<div class="card pad">
+<div class="card" style="padding:4px 14px;margin-bottom:14px;border-radius:14px">
+<div class="rq-list">${reqRosterHTML(f)}</div>
+<div style="text-align:right;padding:6px 2px"><button class="btn btn-ghost btn-sm" data-action="step-back" data-s="pick">${ic('users')}Change people</button></div>
+</div>
+<div class="amount-view"><span class="cur">$</span><span class="amt-num num" id="amt">${amtStr(f.c)}</span></div>
+ ${keypad('request')}
+<div class="quick-amt"><button type="button" data-action="quick-add" data-v="1000">+$10</button><button type="button" data-action="quick-add" data-v="2500">+$25</button><button type="button" data-action="quick-add" data-v="5000">+$50</button><button type="button" data-action="amt-clear">Clear</button></div>
+<div id="rq-total">${reqTotalLine()}</div>
+<div class="field" style="margin-top:10px"><label for="rqnote">Note (optional)</label><input id="rqnote" data-input="rq-note" value="${esc(f.note)}" placeholder="What’s it for?" maxlength="80"></div>
+ ${n?`<p class="hint" style="text-align:center;margin-bottom:8px">${ic('bell')} They’ll respond on their own — you’ll be notified when they pay or decline.</p>`:''}
+<p class="err-msg" id="rq-err"></p>
+<button class="btn btn-primary btn-block" id="rq-send" data-action="rq-send" style="margin-top:8px" ${f.c<=0?'disabled':''}>Send ${n} request${n===1?'':'s'}${f.c>0?` · ${fmt(f.c/100)}`:''}</button>
+</div>`);}
+function rqResults(q){q=q.trim().toLowerCase();const pool=db.users.filter(u=>u.id!==me().id);
+const list=q?pool.filter(u=>u.name.toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q)):pool.slice(0,8);
+return `${list.length?`<div class="group-lbl">${q?'Results':'Your contacts'}</div>`:''}
+ ${list.map(u=>{const onSel=flowReq.sel.includes(u.id);
+const share=onSel&&flowReq.c>0?fmt(flowReq.c/flowReq.sel.length/100):null;
+return `<button class="cp-row ${onSel?'on':''}" data-action="rq-pick" data-id="${u.id}">${avatar(u,42)}<span><b>${esc(u.name)}</b><small>${esc(u.email||'')}</small></span>
+<span style="margin-left:auto;display:inline-flex;align-items:center;gap:8px">${share?`<span class="st-chip st-blue num">${share}</span>`:''}<span class="cp-check">${icf('check')}</span></span></button>`;}).join('')}
+ ${!list.length?`<div class="empty"><div class="empty-ic">${ic('magnifying-glass')}</div><b>No one found</b>Try another name or email.</div>`:''}`;}
+
+function TransferPage(){const f=flowTr,u=me();
+const methods=myMethods();
+return `<div style="max-width:560px;margin:0 auto"><div class="card pad">
+ ${phead('Transfer to bank','Move money out of your PayWallet balance',true)}
+<div class="amount-view"><span class="cur">$</span><span class="amt-num num" id="amt">${amtStr(f.c)}</span></div>
+ ${keypad('transfer')}
+<div class="quick-amt"><button type="button" data-action="quick-add" data-v="5000">+$50</button><button type="button" data-action="quick-add" data-v="10000">+$100</button><button type="button" data-action="quick-add" data-v="25000">+$250</button><button type="button" data-action="amt-clear">Clear</button></div>
+<div id="tr-live">${trLive()}</div>
+<div class="group-lbl">Transfer to</div>
+ ${methods.length?methods.map(mm=>methodRow(mm,f.methodId===mm.id,'tr-fund')).join('')
+:`<div class="empty" style="padding:22px"><div class="empty-ic">${ic('bank')}</div><b>No bank or card linked</b><button class="btn btn-primary btn-sm" style="margin-top:10px" data-action="nav-settings" data-page="setMethods">Add one in settings</button></div>`}
+<div id="tr-fee">${f.c>0&&f.methodId?trFeeBox():''}</div>
+<p class="err-msg" id="tr-err"></p>
+<button class="btn btn-primary btn-block" id="tr-go" data-action="tr-go" ${(!f.methodId||f.c<100)?'disabled':''} style="margin-top:6px">Transfer</button>
+<p class="hint" style="text-align:center;margin-top:12px">${ic('info')} Instant card transfers cost 1% (max $10); bank transfers are free, 1–3 business days. Simulated.</p>
+</div></div>`;}
+function trFeeBox(){const f=flowTr,fee=transferFee(f.methodId,f.c);
+return feeBox([['You transfer',fmt(f.c/100)],[fee?'Instant transfer fee (1%)':'Standard transfer',fee?fmt(fee/100):'Free'],['Total out of balance',fmt((f.c+fee)/100),'tot']]);}
+function AddPage(){const f=flowAdd;
+const methods=myMethods();
+return `<div style="max-width:560px;margin:0 auto"><div class="card pad">
+ ${phead('Add money','Top up your PayWallet balance',true)}
+<div class="amount-view"><span class="cur">$</span><span class="amt-num num" id="amt">${amtStr(f.c)}</span></div>
+ ${keypad('add')}
+<div class="quick-amt"><button type="button" data-action="quick-add" data-v="5000">+$50</button><button type="button" data-action="quick-add" data-v="10000">+$100</button><button type="button" data-action="quick-add" data-v="50000">+$500</button><button type="button" data-action="amt-clear">Clear</button></div>
+<div id="ad-live">${addLive()}</div>
+<div class="group-lbl">From</div>
+ ${methods.map(mm=>methodRow(mm,f.methodId===mm.id,'add-fund')).join('')}
+<button type="button" class="fund-row ${f.methodId==='card'?'on':''}" data-action="add-fund" data-id="card">
+<span class="fund-ic">${ic('credit-card','ph-fill')}</span>
+<span><b>Card · Stripe-style</b><small>Instant · test cards available</small></span>${icf('check-circle','fund-check')}</button>
+<div id="ad-fee">${f.c>0&&f.methodId?feeBox([['You add',fmt(f.c/100)],['Fee','Free'],['Total charged',fmt(f.c/100),'tot']]):''}</div>
+<p class="err-msg" id="ad-err"></p>
+<button class="btn btn-primary btn-block" id="ad-go" data-action="add-go" ${(!f.methodId||f.c<100)?'disabled':''} style="margin-top:6px">Add money</button>
+<p class="hint" style="text-align:center;margin-top:12px">${ic('info')} Adding money is free in this demo and lands instantly (simulated).</p>
+</div></div>`;}
+function trRefresh(){const f=flowTr;if(!f)return;const u=me();
+const fee=f.methodId?transferFee(f.methodId,f.c):0;
+const err=f.c+fee>Math.round(u.balance*100)?'Amount plus fee exceeds your balance.':null;
+const el=$('#amt');if(el){el.textContent=amtStr(f.c);el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');}
+const lv=$('#tr-live');if(lv)lv.innerHTML=trLive();
+const fb=$('#tr-fee');if(fb)fb.innerHTML=f.c>0&&f.methodId?trFeeBox():'';
+const eb=$('#tr-err');if(eb){eb.textContent=err||'';eb.style.display=err?'block':'none';}
+const b=$('#tr-go');if(b)b.disabled=!f.methodId||f.c<100||!!err;}
+function addRefresh(){const f=flowAdd;if(!f)return;
+const err=f.c>1000000?'Deposits are capped at $10,000 in this demo.':null;
+const el=$('#amt');if(el){el.textContent=amtStr(f.c);el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');}
+const lv=$('#ad-live');if(lv)lv.innerHTML=addLive();
+const fb=$('#ad-fee');if(fb)fb.innerHTML=f.c>0&&f.methodId?feeBox([['You add',fmt(f.c/100)],['Fee','Free'],['Total charged',fmt(f.c/100),'tot']]):'';
+const eb=$('#ad-err');if(eb){eb.textContent=err||'';eb.style.display=err?'block':'none';}
+const b=$('#ad-go');if(b)b.disabled=!f.methodId||f.c<100||!!err;}
+
+function activityFiltered(){const f=actFilter,uid_=me().id;
+return db.tx.filter(t=>{if(t.uid!==uid_)return false;
+if(f.type!=='all'){if(f.type==='sent'&&!(t.dir==='out'&&t.kind==='payment'))return false;
+if(f.type==='received'&&!(t.dir==='in'&&t.kind==='payment'))return false;
+if(f.type==='requests'&&t.kind!=='request')return false;
+if(f.type==='moves'&&t.kind!=='deposit'&&t.kind!=='withdrawal')return false;}
+if(f.status!=='all'){const ok={completed:['completed'],pending:['pending'],failed:['failed','declined','cancelled'],flagged:['flagged']}[f.status]||[];if(!ok.includes(t.status))return false;}
+if(f.q){const q=f.q.toLowerCase();const hay=[t.cp&&t.cp.name,t.cp&&t.cp.email,t.note,t.amount.toFixed(2),t.payType==='gns'?'goods services':t.payType==='ff'?'friends family':''].join(' ').toLowerCase();if(!hay.includes(q))return false;}
+return true;}).sort((a,b)=>b.date-a.date);}
+function activityListHTML(){const list=activityFiltered();
+if(!list.length)return `<div class="empty"><div class="empty-ic">${ic('funnel')}</div><b>Nothing matches</b>No transactions fit these filters.<br><button class="btn btn-soft btn-sm" style="margin-top:12px" data-action="act-clear">Clear filters</button></div>`;
+const groups=[];let last=null;
+list.forEach(t=>{const l=dLabel(t.date);if(l!==last){groups.push({label:l,items:[]});last=l;}groups[groups.length-1].items.push(t);});
+return `<div class="list-count">${list.length} transaction${list.length===1?'':'s'}</div>`+
+groups.map(g=>`<div class="day-h">${g.label}</div>`+g.items.map(txRow).join('')).join('');}
+function ActivityPage(){
+const skel=[0,1,2,3,4].map(()=>`<div style="display:flex;gap:12px;align-items:center;padding:13px 4px"><div style="width:44px;height:44px;border-radius:14px;background:#E5EAF5;animation:pulse 1.3s infinite"></div><div style="flex:1"><div style="width:40%;height:13px;border-radius:9px;background:#E5EAF5;animation:pulse 1.3s infinite"></div><div style="width:65%;height:10px;margin-top:7px;border-radius:9px;background:#E5EAF5;animation:pulse 1.3s infinite"></div></div></div>`).join('');
+return `<div class="act-wrap"><div class="card" style="overflow:hidden">
+ ${phead('Activity','Every payment, request and transfer',false)}
+<div class="filters">
+<div class="search-row" style="margin-bottom:10px">${ic('magnifying-glass')}<input data-input="act-search" value="${esc(actFilter.q)}" placeholder="Search people, notes, amounts…" aria-label="Search transactions"></div>
+<div class="chips">${[['all','All'],['sent','Sent'],['received','Received'],['requests','Requests'],['moves','Money in & out']].map(c=>`<button class="chip ${actFilter.type===c[0]?'act':''}" data-action="act-chip" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
+<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+<span class="sel-wrap"><select data-filter="status" aria-label="Filter by status">
+ ${[['all','Any status'],['completed','Completed'],['pending','Pending'],['failed','Failed'],['flagged','Flagged']].map(o=>`<option value="${o[0]}" ${actFilter.status===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>${ic('caret-down')}</span>
+</div></div>
+<div style="padding:0 14px 14px" id="act-list">${actLoading?skel:activityListHTML()}</div>
+</div></div>`;}
+
+function mockTxData(t){
+const cp=t.cp||{};
+const rec={
+id:t.id,
+type:t.kind,
+direction:t.dir==='out'?'outgoing':'incoming',
+amount_usd:Number(t.amount.toFixed(2)),
+fee_usd:Number((t.fee||0).toFixed(2)),
+payment_type:t.kind==='payment'?(t.payType==='gns'?'goods_and_services':'friends_and_family'):null,
+counterparty:{name:cp.name||null,email:cp.email||null},
+funding_source:t.method==='wallet'?'paywallet_balance':methodLabel(t.method),
+note:t.note||null,
+status:t.status,
+buyer_protection:!!(t.extra&&t.extra.protect),
+cashback_usd:(t.extra&&t.extra.cashback)||0,
+three_ds_verified:!!(t.extra&&t.extra.threeDS),
+stripe_payment_intent:(t.extra&&t.extra.stripeRef)||null,
+pay_in_4:!!(t.extra&&t.extra.payIn4),
+created_at:new Date(t.date).toISOString(),
+display_time:dLabel(t.date)+', '+tLabel(t.date),
+reference:t.id};
+return JSON.stringify(rec,null,2);}
+
+function TxPage(id){const t=db.tx.find(x=>x.id===id);
+if(!t)return `<div class="card pad">${phead('Transaction','')}<div class="empty"><div class="empty-ic">${ic('warning')}</div><b>Not found</b>This transaction no longer exists.</div></div>`;
+const cp=t.cp||{};const out=t.dir==='out';
+const title=t.kind==='deposit'?'Money added':t.kind==='withdrawal'?'Transfer to bank':t.kind==='request'?(out?'Request sent':'Request received'):(out?'Payment sent':'Payment received');
+const who=cp.name||'Unknown';
+let banner='';
+if(t.status==='flagged')banner=`<div class="tx-banner b-amber">${ic('shield-warning')}<span><b>A security check paused this payment.</b> Review it below to confirm or cancel. (Simulated check.)</span></div>`;
+if(t.status==='failed')banner=`<div class="tx-banner b-red">${ic('warning-circle')}<span><b>Payment failed.</b> The simulated issuer declined this transaction. You can try again.</span></div>`;
+if(t.status==='pending')banner=`<div class="tx-banner b-blue">${ic('clock')}<span><b>Waiting on ${esc(who)}.</b> We’ll notify you when there’s movement.</span></div>`;
+const steps=t.status==='completed'||t.status==='flagged'?['Initiated '+tLabel(t.date),'Security checks passed','Funds settled (simulated)']:t.status==='pending'?['Request sent '+tLabel(t.date),'Waiting for payment','Settlement']:['Initiated '+tLabel(t.date),'Security checks run','Not completed'];
+const req=t.reqId?db.reqs.find(r=>r.id===t.reqId):null;
+let actions='';
+if(t.status==='pending'&&out&&t.kind==='payment')actions+=`<button class="btn btn-danger-soft" data-action="tx-cancel" data-id="${t.id}">${ic('x-circle')}Cancel payment</button>`;
+if(t.status==='failed')actions+=`<button class="btn btn-primary" data-action="tx-retry" data-id="${t.id}">${ic('arrow-counter-clockwise')}Try again</button>`;
+if(t.status==='flagged'&&!((t.extra||{}).reviewed))actions+=`<button class="btn btn-primary" data-action="tx-review" data-id="${t.id}">${ic('shield-check')}Review with security</button>`;
+if(out&&t.status==='completed'&&(t.extra||{}).settled)actions+=`<button class="btn btn-danger-soft" data-action="tx-report" data-id="${t.id}">${ic('warning')}Report a problem</button>`;
+if(req&&req.status==='pending'){
+if(req.dir==='in')actions+=`<button class="btn btn-primary" data-action="pay-req" data-id="${req.id}">${ic('hand-coins')}Pay ${fmt(req.amount)}</button><button class="btn btn-danger-soft" data-action="decline-req" data-id="${req.id}">Decline</button>`;
+else actions+=`<button class="btn btn-soft" data-action="remind-req" data-id="${req.id}">${ic('bell')}Remind</button><button class="btn btn-danger-soft" data-action="cancel-req" data-id="${req.id}">Cancel request</button>`;}
+return `<div style="max-width:560px;margin:0 auto"><div class="card pad">
+ ${phead('Transaction details','',true)}
+<div class="tx-big">${avatarOf(cp,64)}<div style="font:600 15px var(--fb);margin-top:8px">${esc(title)}</div>
+<div class="amt num" style="color:${out&&t.kind!=='request'?'var(--ink)':'var(--green)'}">${out&&t.kind!=='request'?'−':'+'}${fmt(t.amount)}</div>
+<div style="margin-top:6px">${statusChip(t.status)}</div></div>
+<div style="background:var(--blue-050);border:1px solid var(--blue-100);border-radius:16px;padding:14px 16px;margin:12px 0 4px">
+<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0">
+<span style="color:var(--muted);font-size:13px">${t.kind==='deposit'?'Amount added':t.kind==='withdrawal'?'Amount transferred':(t.dir==='in'?'Amount received':'Amount sent')}</span>
+<b class="num" style="font:700 21px var(--fb);color:${t.kind==='payment'&&t.dir==='out'?'var(--ink)':'var(--green)'}">${t.kind==='request'?'':(t.dir==='out'?'−':'+')}${fmt(t.amount)}</b></div>
+<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:13.5px">
+<span style="color:var(--muted)">${t.kind==='deposit'?'From':t.kind==='withdrawal'?'To':(t.dir==='in'?'From':'Sent to')}</span>
+<b style="text-align:right">${esc(who)}${cp.email?` <span style="color:var(--muted);font-weight:500">· ${esc(cp.email)}</span>`:''}</b></div>
+<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:13.5px">
+<span style="color:var(--muted)">Time</span><b>${dLabel(t.date)}, ${tLabel(t.date)}</b></div>
+</div>
+ ${banner}
+<div class="review-card" style="margin-top:6px">
+<div class="rrow"><span>${out?'To':'From'}</span><b>${esc(who)}${cp.email?' · '+esc(cp.email):''}</b></div>
+ ${t.note?`<div class="rrow"><span>Note</span><b>“${esc(t.note)}”</b></div>`:''}
+ ${t.kind==='payment'?`<div class="rrow"><span>Payment type</span><b>${t.payType==='gns'?'Goods & Services':'Friends & Family'}</b></div>`:''}
+ ${(t.extra||{}).protect?`<div class="rrow"><span>Buyer Protection</span><b class="st-chip st-green">${icf('shield-check')}Included</b></div>`:''}
+ ${(t.extra||{}).payIn4?`<div class="rrow"><span>Pay in 4</span><b>4 × ${fmt(t.extra.payIn4.total/4)} · merchant paid in full</b></div>`:''}
+ ${(t.extra||{}).cashback?`<div class="rrow"><span>Cashback (1%)</span><b class="num" style="color:var(--green)">+${fmt(t.extra.cashback)}</b></div>`:''}
+<div class="rrow"><span>Category</span><b>${ic((CATS[t.cat]||{}).icon||'tag')} ${(CATS[t.cat]||{}).label||'—'}</b></div>
+<div class="rrow"><span>Funding</span><b>${t.method==='wallet'?'PayWallet balance':esc(methodLabel(t.method))}</b></div>
+ ${t.fee?`<div class="rrow"><span>Fee</span><b class="num">${fmt(t.fee)}${t.payType==='gns'?' · paid by recipient':''}</b></div>`:''}
+ ${(t.extra||{}).stripeRef?`<div class="rrow"><span>Card ref (mock Stripe)</span><b class="mono">${esc(t.extra.stripeRef)}</b></div>`:''}
+ ${(t.extra||{}).threeDS?`<div class="rrow"><span>Authentication</span><b class="st-chip st-green">${icf('shield-check')}3D Secure passed</b></div>`:''}
+<div class="rrow"><span>Date</span><b>${dLabel(t.date)}, ${tLabel(t.date)}</b></div>
+<div class="rrow"><span>Reference</span><b class="mono">${esc(t.id)}</b></div></div>
+<div style="margin:14px 0 4px;font:700 12px var(--fb);letter-spacing:.06em;text-transform:uppercase;color:var(--faint)">Timeline</div>
+ ${steps.map((s,i)=>`<div style="display:flex;gap:10px;align-items:center;padding:6px 2px;font-size:13.5px;color:${i<steps.length-1||['completed','flagged'].includes(t.status)?'var(--ink-2)':'var(--muted)'}">${icf(i<steps.length-1||['completed','flagged'].includes(t.status)?'check-circle':'circle',`style="color:${i<steps.length-1||['completed','flagged'].includes(t.status)?'var(--green)':'var(--faint)'};font-size:17px"`)}${esc(s)}</div>`).join('')}
+<div class="acc" style="border-top:1px solid var(--line-2);margin-top:12px">
+<button class="acc-head" data-action="acc"><i class="q ph ph-brackets-curly"></i>View raw transaction data (mock)${ic('caret-right','caret')}</button>
+<div class="acc-body"><pre class="mono" style="white-space:pre-wrap;word-break:break-word;background:var(--gray-bg);border-radius:10px;padding:12px;font-size:11.5px;line-height:1.55;margin:0">${esc(mockTxData(t))}</pre></div>
+</div>
+<div style="text-align:center;margin:14px 0"><span class="demo-note">${ic('info')}Simulated demo transaction</span></div>
+<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">${actions}
+<button class="btn btn-ghost" data-action="copy-ref" data-v="${t.id}">${ic('copy')}Copy reference</button></div>
+</div></div>`;}
+
+function insData(){const my=me(),now=Date.now(),week=insState.seg==='week';
+const win=week?7:183;
+const cur=db.tx.filter(t=>t.uid===my.id&&t.status==='completed'&&now-t.date<=win*864e5+36e5);
+const prev=db.tx.filter(t=>{const age=now-t.date;return t.uid===my.id&&t.status==='completed'&&age>win*864e5&&age<=win*2*864e5;});
+const sumOut=arr=>arr.filter(t=>t.dir==='out').reduce((s,t)=>s+t.amount+(t.kind==='payment'&&t.payType==='ff'?t.fee||0:0),0);
+const sumIn=arr=>arr.filter(t=>t.dir==='in').reduce((s,t)=>s+t.amount,0);
+const out=sumOut(cur),inn=sumIn(cur),pOut=sumOut(prev);
+const days=[];
+if(week)for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);
+const lbl=d.toLocaleDateString('en-US',{weekday:'short'}).slice(0,2);
+const v=cur.filter(t=>t.dir==='out'&&new Date(t.date).toDateString()===d.toDateString()).reduce((s,t)=>s+t.amount+(t.kind==='payment'&&t.payType==='ff'?t.fee||0:0),0);
+days.push({lbl,out:v});}
+const months=[];
+if(!week)for(let i=5;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);
+const m=d.toLocaleDateString('en-US',{month:'short'});
+const v=cur.filter(t=>{const td=new Date(t.date);return t.dir==='out'&&td.getMonth()===d.getMonth()&&td.getFullYear()===d.getFullYear();}).reduce((s,t)=>s+t.amount+(t.kind==='payment'&&t.payType==='ff'?t.fee||0:0),0);
+months.push({m,v});}
+const catMap={};
+cur.filter(t=>t.dir==='out').forEach(t=>{const k=t.kind==='withdrawal'?'withdrawal':(t.cat||'transfer');catMap[k]=(catMap[k]||0)+t.amount;});
+const cats=Object.entries(catMap).map(([k,v])=>({k,v,c:(CATS[k]||{}).c||'#3B5BDB',label:(CATS[k]||{}).label||k})).sort((a,b)=>b.v-a.v);
+const people={};cur.filter(t=>t.dir==='out'&&t.cp&&t.cp.id&&!t.cp.bank).forEach(t=>{people[t.cp.id]=people[t.cp.id]||{cp:t.cp,v:0,n:0};people[t.cp.id].v+=t.amount;people[t.cp.id].n++;});
+const top=Object.values(people).sort((a,b)=>b.v-a.v).slice(0,4);
+const delta=(pOut>0)?Math.round((out-pOut)/pOut*100):null;
+return{out,inn,net:inn-out,pOut,delta,days,months,cats,top,count:cur.length};}
+function narrateInsights(d){
+const L=[];
+const top=d.cats[0];
+if(top&&d.out>0)L.push(`${top.label} is your biggest category — ${Math.round(top.v/d.out*100)}% of spending (${fmt(top.v)}).`);
+if(d.delta!==null&&Number.isFinite(d.delta))L.push(d.delta>0
+?`Spending is up ${d.delta}% vs the previous period (${fmt(d.pOut)} → ${fmt(d.out)}).`
+:`Spending is down ${Math.abs(d.delta)}% vs the previous period — nice pullback.`);
+if(d.top[0])L.push(`${d.top[0].cp.name} received the most from you: ${fmt(d.top[0].v)} across ${d.top[0].n} payments.`);
+const wd=d.days&&d.days.length?d.days.reduce((a,b)=>b.out>a.out?b:a):null;
+if(wd&&wd.out>0)L.push(`Your heaviest day was ${wd.lbl} at ${fmt(wd.out)}.`);
+return L.slice(0,3);}
+function InsightsPage(){const d=insData();const week=insState.seg==='week';
+insCache=d;
+const delta=Number.isFinite(d.delta)?d.delta:null;
+const NL=narrateInsights(d);
+return `<div class="ins-grid">
+<div class="card pad span2">${phead('Insights','Where your demo money goes',false)}
+ ${NL.length?`<div class="notice" style="margin-bottom:14px">${icf('sparkle')}<span><b>✦ AI insights</b> (rule-based, mock)<br>${NL.map(l=>'• '+esc(l)).join('<br>')}</span></div>`:''}
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div class="seg" role="tablist"><button class="${week?'act':''}" data-action="ins-seg" data-v="week" role="tab" aria-selected="${week}">This week</button><button class="${!week?'act':''}" data-action="ins-seg" data-v="month" role="tab" aria-selected="${!week}">6 months</button></div>
+<span class="demo-note" style="margin:0">${ic('info')}Based on ${d.count} simulated transactions</span>
+</div>
+<div class="stat-strip">
+<div class="stat-cell" style="border:none;padding-left:0"><small>${ic('arrow-up-right')}Sent</small><b class="num">${fmt(d.out)}</b>
+ ${delta!==null?`<span class="delta ${delta>0?'up':'down'}">${ic(delta>0?'trend-up':'trend-down')}${Math.abs(delta)}% vs prev</span>`:''}</div>
+<div class="stat-cell"><small>${ic('arrow-down-left')}Received</small><b class="num">${fmt(d.inn)}</b></div>
+<div class="stat-cell"><small>${ic('scales')}Net</small><b class="num" style="color:${d.net>=0?'var(--green)':'var(--red)'}">${d.net>=0?'+':'−'}${fmt(Math.abs(d.net))}</b></div>
+</div></div>
+<div class="card pad"><div class="chart-title"><h3>${week?'Daily spending':'Monthly trend'}</h3><span>${week?'last 7 days · tap a bar':'last 6 months'}</span></div>
+ ${d.out===0&&d.inn===0?`<div class="empty"><div class="empty-ic">${ic('chart-bar')}</div><b>No data yet</b>Complete some payments to see insights.</div>`:week?`<div id="wk-chart">${weeklyChart(d.days)}</div>`:trendChart(d.months)}</div>
+<div class="card pad"><div class="chart-title"><h3>By category</h3><span>${week?'this week':'6 months'}</span></div>
+ ${d.cats.length?`<div class="donut-wrap">${donutChart(d.cats,d.out)}<div>${d.cats.map(c=>`<div class="leg-row"><span class="leg-dot" style="background:${c.c}"></span>${esc(c.label)}<span class="leg-bar"><span style="width:${Math.round(c.v/d.out*100)}%;background:${c.c}"></span></span><b class="num">${fmt(c.v)}</b></div>`).join('')}</div></div>`:`<div class="empty"><div class="empty-ic">${ic('chart-pie-slice')}</div><b>Nothing spent yet</b></div>`}</div>
+<div class="card pad"><div class="chart-title"><h3>Top people</h3><span>by amount sent</span></div>
+ ${d.top.length?d.top.map(p=>`<div class="people-row">${avatarOf(p.cp,40)}<span><b>${esc(p.cp.name)}</b><small>${p.n} payment${p.n===1?'':'s'}</small></span><span class="amt num">${fmt(p.v)}</span></div>`).join(''):`<div class="empty"><div class="empty-ic">${ic('users')}</div><b>No payments yet</b></div>`}</div>
+</div>`;}
+
+function ReceivePage(){const u=me();const amt=receiveAmtC;const link=payLink();
+return `<div style="max-width:520px;margin:0 auto"><div class="card pad">
+ ${phead('Get paid','Share your link or code — paywallet.me style',true)}
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">${avatar(u,48)}
+<div style="min-width:0"><b style="font:600 15px var(--fb)">${esc(u.name)}</b>
+<div style="color:var(--muted);font-size:13px">${esc(u.email)}</div></div></div>
+<div style="text-align:center;padding:6px 0 2px">
+<div class="qr-box">${qrSvg(link)}</div>
+<p style="font:600 13.5px var(--fb);margin-top:12px">${amt?`Scanning pays you ${fmt(amt/100)}`:'Scan to pay '+esc(u.name)}</p>
+<p class="hint">Decorative pattern encoding your link — not a real QR payload.</p></div>
+<div style="text-align:center;margin:10px 0 2px"><span class="demo-note" style="margin:0">${ic('info')}Simulated — real scanners won’t resolve it</span></div>
+</div>
+<div class="card pad" style="margin-top:16px">
+<div class="group-lbl" style="padding-top:0">Your paywallet.me link (mock)</div>
+<div class="link-row"><span class="mono">${esc(link)}</span>
+<button class="iconbtn" style="width:34px;height:34px" data-action="copy-ref" data-v="${esc(link)}" aria-label="Copy link">${ic('copy')}</button></div>
+<p class="hint" style="margin-top:8px">${ic('info')} Illustrative only — no live page exists behind it.</p>
+<div class="group-lbl">Set an amount (optional)</div>
+<div class="chips">${[['0','Any amount'],['1000','$10'],['2500','$25'],['5000','$50']].map(c=>`<button class="chip ${amt===parseInt(c[0],10)?'act':''}" data-action="rc-amt" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
+<button class="btn btn-primary" data-action="rc-share">${ic('share-network')}Share…</button>
+<button class="btn btn-soft" data-action="nav" data-page="friends">${ic('users')}Find friends</button></div>
+</div></div>`;}
+function shareSheet(text,url){
+return openModal(`<div style="padding-top:22px">
+<h3 style="font-size:19px;margin-bottom:4px">Share your payment link</h3>
+<p class="hint" style="margin-bottom:16px">Simulated share sheet — nothing actually leaves your device.</p>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center">
+<button class="sh-tile" data-action="sh-send" data-app="Messages"><span style="background:#34C759">${icf('chat-circle-text')}</span>Messages</button>
+<button class="sh-tile" data-action="sh-send" data-app="WhatsApp"><span style="background:#25D366">${icf('whatsapp-logo')}</span>WhatsApp</button>
+<button class="sh-tile" data-action="sh-send" data-app="Mail"><span style="background:#3B5BDB">${icf('envelope-simple')}</span>Mail</button>
+<button class="sh-tile" data-action="sh-send" data-app="More"><span style="background:#667085">${icf('dots-three-bold')}</span>More</button>
+</div>
+<div style="display:grid;gap:8px;margin-top:16px">
+<button class="btn btn-soft" data-action="sh-copy">${ic('copy')}Copy link instead</button>
+<button class="btn btn-ghost" data-action="close-modal-btn">Cancel</button></div></div>`);}
+const CONTACT_BOOK=[
+{name:'Jordan Reyes',email:'jordan.reyes@example.com'},
+{name:'Diego Fuentes',phone:'+1 (510) 555-0198'},
+{name:'Elena Sokolova',email:'elena.s@example.com'},
+{name:'Riley Thompson',email:'riley.t@example.com'},
+{name:'Morgan Diaz',phone:'+1 (628) 555-0231'},
+{name:'Casey Nguyen',email:'casey.n@example.com'},
+{name:'Alex Rivera',phone:'+1 (510) 555-0298'},
+{name:'Sam Brooks',email:'sam.brooks@example.com'}];
+function matchContacts(){const out={on:[],off:[]};
+CONTACT_BOOK.forEach(c=>{const m=db.users.find(u=>u.id!==me().id&&((c.phone&&digits(u.phone||'')===digits(c.phone))||(c.email&&u.email===c.email)));
+if(m)out.on.push({u:m,via:c.phone?'phone':'email'});else out.off.push(c);});
+return out;}
+function FriendsPage(){const synced=db.contactsSynced&&!friendsSyncing;const syncing=friendsSyncing;
+const matched=synced?matchContacts():null;
+return `<div style="max-width:560px;margin:0 auto"><div class="card pad">
+ ${phead('Find friends','Contact matching — fully simulated',true)}
+<div class="notice" style="margin-bottom:14px">${ic('shield-check')}<span>Real apps hash your address book on-device and compare it against registered accounts. Here a <b>sample contact book</b> is matched against the demo directory — nothing is read from your phone.</span></div>
+ ${!synced&&!syncing?`
+<div class="empty" style="padding:30px 10px"><div class="empty-ic">${ic('users')}</div><b>Sync your contacts</b>See which of your (sample) contacts already have PayWallet.<br>
+<button class="btn btn-primary" style="margin-top:14px" data-action="friends-sync">${ic('arrows-clockwise')}Sync contacts</button></div>`:''}
+ ${syncing?`<div style="padding:8px 0">
+ ${[0,1,2,3].map(()=>`<div style="display:flex;gap:12px;align-items:center;padding:11px 2px"><div style="width:42px;height:42px;border-radius:14px;background:#E5EAF5;animation:pulse 1.3s infinite"></div><div style="flex:1"><div style="width:45%;height:12px;border-radius:8px;background:#E5EAF5;animation:pulse 1.3s infinite"></div><div style="width:70%;height:9px;margin-top:6px;border-radius:8px;background:#E5EAF5;animation:pulse 1.3s infinite"></div></div></div>`).join('')}
+<p class="hint" style="text-align:center">Hashing ${CONTACT_BOOK.length} contacts & matching (simulated)…</p></div>`:''}
+ ${synced?`
+<div class="group-lbl" style="padding-top:0">${icf('check-circle')} On PayWallet (${matched.on.length})</div>
+ ${matched.on.map(m=>`<div class="people-row">${avatar(m.u,42)}
+<span style="min-width:0"><b>${esc(m.u.name)}</b><small>${esc(m.u.email)} · matched via ${m.via}</small></span>
+<button class="btn btn-primary btn-sm" data-action="friend-pay" data-id="${m.u.id}">Pay</button></div>`).join('')||'<p class="hint" style="padding:6px 2px">No matches found.</p>'}
+<div class="group-lbl">Not on PayWallet (${matched.off.length}) — invite</div>
+ ${matched.off.map(c=>`<div class="people-row">${avatar(c,42)}
+<span style="min-width:0"><b>${esc(c.name)}</b><small>${esc(c.email||c.phone)}</small></span>
+ ${(db.invites||[]).includes(c.email||c.phone)?`<span class="st-chip st-green">${icf('check')}Invited</span>`
+:`<button class="btn btn-soft btn-sm" data-action="invite-cp" data-name="${esc(c.name)}" data-id="${esc(c.email||c.phone)}">${ic('paper-plane-tilt')}Invite</button>`}</div>`).join('')}
+<button class="btn btn-ghost btn-block" style="margin-top:14px" data-action="friends-reset">${ic('arrow-counter-clockwise')}Reset sync demo</button>`:''}
+</div></div>`;}
+
+function PlansPage(){const plans=(db.plans||[]).filter(p=>p.remaining.some(r=>!r.paid));
+return `<div style="max-width:560px;margin:0 auto"><div class="card pad">
+ ${phead('Pay in 4','Your active installment plans',true)}
+ ${plans.length?plans.map(p=>{const next=p.remaining.find(r=>!r.paid);const left=p.remaining.filter(r=>!r.paid).length;
+const payoff=p.remaining.filter(r=>!r.paid).reduce((s,r)=>s+r.amt,0);
+return `<div class="card" style="padding:14px;margin-bottom:10px;box-shadow:none">
+<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b style="font:600 14.5px var(--fb)">${esc(p.to)}</b><span class="st-chip st-blue">${left} payment${left===1?'':'s'} left</span></div>
+<p class="hint" style="margin:2px 0 8px">${fmt(p.total)} total · ${fmt(p.inst)} each${p.note?` · “${esc(p.note)}”`:''}</p>
+<div class="fee-box" style="margin:0 0 10px">
+<div class="fr"><span>Next payment (due ${dLabel(next.due)})</span><b>${fmt(next.amt)}</b></div>
+<div class="fr"><span>Pay off all ${left}</span><b>${fmt(payoff)}</b></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<button class="btn btn-soft btn-sm" data-action="p4-pay" data-id="${p.id}">Pay ${fmt(next.amt)} now</button>
+<button class="btn btn-ghost btn-sm" data-action="p4-sim" data-id="${p.id}">Simulate 2 weeks →</button>
+</div></div>`;}).join('')
+:`<div class="empty"><div class="empty-ic">${ic('calendar-check')}</div><b>No active plans</b>Choose “Pay in 4” on any G&S payment of $30–$1,500.</div>`}
+<div class="notice" style="margin-top:8px">${ic('info')}<span>“Simulate 2 weeks” runs autopay exactly as it fires on the real due date — including failing when your balance can’t cover it.</span></div>
+</div></div>`;}
+
+function SavingsPage(){const u=me();const s=u.savings||{amt:0};
+return `<div style="max-width:560px;margin:0 auto"><div class="card pad">
+ ${phead('PayWallet Savings','A separate pocket that earns while you sleep',true)}
+<div class="bal-card" style="padding:18px">
+<div class="bal-top"><span class="bal-label">Savings balance</span></div>
+<div class="bal-num num" style="font-size:34px;margin:8px 0 10px">${fmt(s.amt)}</div>
+<div class="bal-row"><span class="bal-tag">${ic('trend-up')}4.30% APY (simulated)</span><span class="bal-tag">${ic('calendar-dots')}~${fmt(s.amt*0.043/12)} / month</span></div>
+</div>
+<div class="fee-box" style="margin-top:14px"><div class="fr"><span>Projected in 1 year</span><b>${fmt(s.amt*1.043)}</b></div>
+<div class="fr"><span>Move between pockets</span><b>Instant · free</b></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px">
+<button class="btn btn-primary" data-action="sav-in">${ic('arrow-down')}Move in</button>
+<button class="btn btn-soft" data-action="sav-out">${ic('arrow-up')}Move out</button></div>
+<p class="hint" style="text-align:center;margin-top:12px">${ic('lock')} Savings is separate from your spendable balance — move money back before sending.</p>
+</div></div>`;}
+function savMove(dir){const u=me();
+return openModal(`<div style="padding-top:22px"><h3 style="font-size:19px;margin-bottom:4px">${dir==='in'?'Move to Savings':'Move from Savings'}</h3>
+<p class="hint" style="margin-bottom:14px">${dir==='in'?`From your balance (${fmt(u.balance)})`:`To your balance (${fmt(u.balance)})`} · instant · free</p>
+<div class="chips" style="margin-bottom:16px;flex-wrap:wrap">
+ ${[['2500','$25'],['10000','$100'],['50000','$500'],['all','All']].map(c=>`<button class="chip" data-action="sav-go" data-dir="${dir}" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
+<button class="btn btn-ghost btn-block" data-action="close-modal-btn">Cancel</button></div>`);}
+
+function ProfilePage(u){
+const cnt=db.tx.filter(t=>t.uid===u.id&&t.status==='completed'&&t.kind==='payment').length;
+const people=new Set(db.tx.filter(t=>t.uid===u.id&&t.cp&&t.cp.id&&!t.cp.bank).map(t=>t.cp.id)).size;
+const cashback=db.tx.filter(t=>t.uid===u.id).reduce((s,t)=>s+((t.extra||{}).cashback||0),0);
+const menu=[['savings','piggy-bank','Savings','Earn 4.30% APY (simulated)'],
+['plans','calendar-check','Pay in 4 plans','Installments & autopay'],
+['receive','qr-code','Receive & connect','paywallet.me link, QR code, find friends'],
+['setProfile','user-circle','Profile','Name, email, phone, avatar'],
+['setMethods','credit-card','Banks & cards','Linked instruments (account-level)'],
+['setNotifs','bell','Notifications','Payments, requests, security'],
+['setSecurity','shield-check','Security & 2-step','Verification, drills, devices'],
+['help','question','Help center','FAQs and guides'],
+['helpContact','headset','Contact support','We reply within a day (simulated)']];
+return `<div style="max-width:620px;margin:0 auto">
+<div class="card pf-hero">${avatar(u,88)}
+<h2 style="font-size:22px;margin-top:12px">${esc(u.name)} ${u.verified?icf('seal-check','').replace('<i','<i style="color:var(--blue);font-size:19px"'):''}</h2>
+<p style="color:var(--muted);font-size:14px"><button style="font:600 14px var(--fb);color:var(--blue)" data-action="copy-handle" data-v="${esc(u.email)}">${esc(u.email)} ${ic('copy')}</button></p>
+<div class="pf-stats"><div><b>${cnt}</b><small>payments</small></div><div><b>${people}</b><small>people</small></div><div><b>${new Date(u.joined).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</b><small>member since</small></div></div>
+<p style="text-align:center;margin-top:10px;font-size:12.5px;color:var(--muted)">${ic('coins')} ${fmt(cashback)} cashback earned on purchases (1% G&S)</p>
+</div>
+<div class="card menu-card" style="margin-top:16px">${menu.map(m=>`<button class="menu-row" data-action="nav-settings" data-page="${m[0]}"><i class="ph ph-${m[1]}"></i><span class="mr-txt" style="min-width:0">${m[2]}<small>${m[3]}</small></span>${ic('caret-right','caret')}</button>`).join('')}
+<button class="menu-row danger" data-action="reset-demo"><i class="ph ph-arrow-counter-clockwise"></i><span class="mr-txt">Reset demo data<small>Restore the original sample account</small></span></button>
+<button class="menu-row danger" data-action="logout"><i class="ph ph-sign-out"></i><span class="mr-txt">Log out</span></button></div>
+<p style="text-align:center;color:var(--faint);font-size:11.5px;margin-top:16px">PayWallet — an original payments demo inspired by real platforms · no real money</p>
+</div>`;}
+function SetProfilePage(u){const c=editColor||u.color;
+return `<div style="max-width:560px;margin:0 auto"><div class="card pad">
+ ${phead('Profile','How people see you on PayWallet',true)}
+<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">${avatar({...u,color:c},64)}
+<div><b style="font:600 15px var(--fb)">${esc(u.name)}</b><br><span class="hint">Pick an avatar color below</span></div></div>
+<div class="group-lbl" style="padding-top:0">Avatar color</div>
+<div class="swatches">${AV_COLORS.map(col=>`<button class="sw-b ${col===c?'on':''}" style="background:${col}" data-action="color" data-v="${col}" aria-label="Color ${col}"></button>`).join('')}</div>
+<form data-form="edit-profile" novalidate>
+<div class="field"><label for="pname">Name</label><input id="pname" name="name" value="${esc(u.name)}"></div><p class="err-msg" data-err="name"></p>
+<div class="field"><label for="pemail">Email (your PayWallet ID)</label><input id="pemail" name="email" type="email" value="${esc(u.email||'')}"></div><p class="err-msg" data-err="email"></p>
+<div class="field"><label for="pphone">Mobile</label><input id="pphone" name="phone" type="tel" value="${esc(u.phone||'')}"></div><p class="err-msg" data-err="phone"></p>
+<button class="btn btn-primary btn-block" data-busy="Saving…">Save changes</button>
+</form></div></div>`;}
+function SetMethodsPage(){const u=me();const methods=myMethods();
+return `<div style="max-width:620px;margin:0 auto"><div class="card pad">
+ ${phead('Banks & cards','Linked at the account level — nothing to “connect”',true)}
+<div class="set-row">${avatarOf({name:'PayWallet balance',bank:true,icon:'wallet'},40)}<div class="sr-txt"><b>PayWallet balance</b><small>Default for payments · ${fmt(u.balance)} available</small></div><span class="st-chip st-blue">Wallet</span></div>
+ ${methods.length?methods.map(m=>`<div class="set-row">
+ ${avatarOf({name:m.type,bank:true,icon:m.type==='card'?'credit-card':'bank'},40)}
+<div class="sr-txt" style="flex:1"><b>${m.type==='card'?`${m.brand} •• ${m.last4}`:`${esc(m.name)} •• ${m.last4}`}${m.isDefault?' <span class="st-chip st-green">'+ic('star')+'Default</span>':''}</b>
+<small>${m.type==='card'?'Debit card · instant transfers (1% fee)':'Bank account · standard transfers (free)'}</small></div>
+ ${!m.isDefault?`<button class="iconbtn" data-action="set-default" data-id="${m.id}" aria-label="Set default">${ic('star')}</button>`:''}
+<button class="iconbtn" data-action="del-method" data-id="${m.id}" aria-label="Remove">${ic('trash')}</button></div>`).join('')
+:`<div class="empty" style="padding:28px"><div class="empty-ic">${ic('credit-card')}</div><b>No cards or banks yet</b>Add one to pay beyond your balance or transfer out — or just use the card flow once and save it.</div>`}
+<button class="btn btn-soft btn-block" style="margin-top:14px" data-action="add-method">${ic('plus')}Add a card or bank</button>
+<p class="hint" style="text-align:center;margin-top:12px">${ic('info')} Mock instruments only — any valid-format card number (e.g. 4242 4242 4242 4242) works.</p>
+</div></div>`;}
+function SetNotifsPage(u){
+const rows=[['payments','Payments sent & received','Receipts and delivery confirmations'],['requests','Payment requests','Requests to you and your outgoing ones'],['deposits','Money in & out','Add money, transfers, savings interest'],['security','Security events','Sign-ins, 2-step changes, security checks'],['marketing','Tips & product news','Occasional demo tips — nothing real']];
+return `<div style="max-width:560px;margin:0 auto"><div class="card pad">
+ ${phead('Notifications','Choose what reaches you',true)}
+ ${rows.map(r=>`<div class="set-row"><div class="sr-txt" style="flex:1"><b>${r[1]}</b><small>${r[2]}</small></div>
+<button class="sw ${u.settings.notif[r[0]]?'on':''}" data-action="sw-toggle" data-key="notif.${r[0]}" role="switch" aria-checked="${!!u.settings.notif[r[0]]}" aria-label="${r[1]}"></button></div>`).join('')}
+<button class="btn btn-soft btn-block" style="margin-top:16px" data-action="test-notif">${ic('bell-ringing')}Send a test notification</button>
+</div></div>`;}
+function SetSecurityPage(u){const sens=u.settings.secSens||'standard';
+const ps=db.phishState||{seen:0,correct:0};
+return `<div style="max-width:560px;margin:0 auto"><div class="card pad">
+ ${phead('Security & 2-step','Protect the demo wallet',true)}
+<div class="set-row"><div class="sr-txt" style="flex:1"><b>2-step verification</b><small>Text a code at every login (simulated).</small></div>
+<button class="sw ${u.settings.twofa?'on':''}" data-action="twofa-toggle" role="switch" aria-checked="${!!u.settings.twofa}" aria-label="2-step verification"></button></div>
+<div class="set-row"><div class="sr-txt" style="flex:1"><b>Login alerts</b><small>Notify me about new device sign-ins.</small></div>
+<button class="sw ${u.settings.loginAlerts?'on':''}" data-action="sw-toggle" data-key="loginAlerts" role="switch" aria-checked="${!!u.settings.loginAlerts}" aria-label="Login alerts"></button></div>
+<div class="set-row" style="display:block"><div class="sr-txt" style="margin-bottom:10px"><b>Security check sensitivity</b><small>How aggressively unusual payments get paused.</small></div>
+<div class="seg">${[['low','Low'],['standard','Standard'],['high','High']].map(s=>`<button class="${sens===s[0]?'act':''}" data-action="sec-seg" data-v="${s[0]}">${s[1]}</button>`).join('')}</div></div>
+<div class="set-row" style="display:block"><div class="sr-txt" style="margin-bottom:10px"><b>Phishing drills${AI_TAG}</b><small>PayWallet attacks you on purpose — learn to spot the tells. Score: ${ps.correct}/${ps.seen} reported correctly.</small></div>
+<button class="btn btn-primary btn-sm" data-action="phish-run">${ic('shield-warning')}Run a security drill now</button></div>
+<div style="margin-top:16px;font:700 12px var(--fb);letter-spacing:.06em;text-transform:uppercase;color:var(--faint)">Devices</div>
+ ${(u.devices||[]).map(d=>`<div class="dev-row">${ic(d.cur?'desktop':'device-mobile')}<div style="flex:1"><b style="font:600 14px var(--fb)">${esc(d.name)}</b>${d.cur?' <span class="cur-tag">THIS DEVICE</span>':`<small style="color:var(--muted);display:block">Last active ${esc(d.last||'recently')}</small>`}</div>
+ ${!d.cur?`<button class="btn btn-ghost btn-sm" data-action="device-out" data-id="${d.id}">Log out</button>`:''}</div>`).join('')}
+<button class="btn btn-danger-soft btn-block" style="margin-top:16px" data-action="signout-all">${ic('sign-out')}Log out all other devices</button>
+<div class="notice" style="margin-top:16px">${ic('shield-check')}<span>All security events in this demo are simulated locally — nothing touches a real account.</span></div>
+</div></div>`;}
+
+function SuccessPage(){const sv=successView;
+if(!sv)return `<div class="card pad">${phead('Done','',false)}<div class="empty"><div class="empty-ic">${ic('check-circle')}</div><b>Nothing to show</b></div></div>`;
+if(sv.req){const each=sv.total/sv.count;
+return `<div class="success-wrap"><svg class="big-check" viewBox="0 0 100 100"><circle class="bc-c" cx="50" cy="50" r="44"/><path class="bc-p" d="M32 52 45 65 70 38"/></svg>
+<h1>Request${sv.count===1?'':'s'} sent</h1>
+<div class="s-amt num">${fmt(sv.total)}</div>
+<span class="demo-note">${ic('info')}Simulated demo request</span>
+<div class="meta-list"><div class="rrow"><span>To</span><b>${sv.names.map(esc).join(', ')}</b></div>
+ ${sv.count>1?`<div class="rrow"><span>Each pays</span><b class="num">${fmt(each)}</b></div>`:''}
+ ${sv.note?`<div class="rrow"><span>Note</span><b>“${esc(sv.note)}”</b></div>`:''}
+<div class="rrow"><span>What’s next</span><b>They’ll respond — watch your notifications</b></div></div>
+<button class="btn btn-primary btn-block" data-action="nav" data-page="home">Done</button></div>`;}
+const t=db.tx.find(x=>x.id===sv.txId)||{};const cp=t.cp||{};const out=t.dir==='out';
+const dep=t.kind==='deposit',wd=t.kind==='withdrawal';
+return `<div class="success-wrap"><svg class="big-check" viewBox="0 0 100 100"><circle class="bc-c" cx="50" cy="50" r="44"/><path class="bc-p" d="M32 52 45 65 70 38"/></svg>
+<h1>${dep?'Money added':wd?'Transfer started':'Payment sent'}</h1>
+<div class="s-amt num">${fmt(t.amount||0)}</div>
+<span class="s-to">${avatarOf(cp,28)} ${esc(cp.name||'')}</span>
+<div><span class="demo-note">${ic('info')}Simulated demo payment — no real money moved</span></div>
+<div class="meta-list">
+<div class="rrow"><span>${out?'To':'From'}</span><b>${esc(cp.name||'—')}</b></div>
+ ${t.kind==='payment'?`<div class="rrow"><span>Type</span><b>${t.payType==='gns'?'Goods & Services · Buyer Protection':'Friends & Family'}</b></div>`:''}
+ ${(t.extra||{}).payIn4?`<div class="rrow"><span>Pay in 4</span><b>3 payments of ${fmt(t.extra.payIn4.total/4)} remaining</b></div>`:''}
+ ${t.note?`<div class="rrow"><span>Note</span><b>“${esc(t.note)}”</b></div>`:''}
+<div class="rrow"><span>Funding</span><b>${t.method==='wallet'?'PayWallet balance':esc(methodLabel(t.method))}</b></div>
+ ${t.fee?`<div class="rrow"><span>Fee</span><b class="num">${fmt(t.fee)}${t.payType==='gns'?' · paid by recipient':''}</b></div>`:''}
+ ${(t.extra||{}).cashback?`<div class="rrow"><span>Cashback earned (1%)</span><b class="num" style="color:var(--green)">+${fmt(t.extra.cashback)}</b></div>`:''}
+ ${(t.extra||{}).threeDS?`<div class="rrow"><span>Authentication</span><b class="st-chip st-green">${icf('shield-check')}3D Secure passed</b></div>`:''}
+<div class="rrow"><span>Reference</span><b class="mono">${esc(t.id)}</b></div>
+<div class="rrow"><span>Date</span><b>${dLabel(t.date)}, ${tLabel(t.date)}</b></div>
+ ${out&&!dep&&!wd?`<div class="rrow"><span>What’s next</span><b>Delivery receipt on its way</b></div>`:''}</div>
+<div style="display:grid;gap:10px">
+<button class="btn btn-primary btn-block" data-action="nav" data-page="home">Done</button>
+<button class="btn btn-soft btn-block" data-action="open-tx" data-id="${t.id}">View details</button></div>
+</div>`;}
+
+function NotifPage(){
+const icons={payment:['paper-plane-tilt',''],request:['hand-coins','request'],deposit:['plus-circle','deposit'],security:['shield-warning','security'],system:['info','']};
+return `<div style="max-width:620px;margin:0 auto"><div class="card" style="overflow:hidden">
+ ${phead('Notifications','Payment, request & security alerts',true,
+`<button class="btn btn-ghost btn-sm" data-action="notif-read-all">Mark all read</button><button class="btn btn-danger-soft btn-sm" data-action="notif-clear">Clear</button>`)}
+<div style="padding:0 14px 14px">${db.notifs.length?db.notifs.map(n=>{const icn=icons[n.type]||icons.system;
+return `<button class="notif-row ${n.read?'':'unread'}" data-action="open-notif" data-id="${n.id}">
+<span class="notif-ic ${icn[1]}">${ic(icn[0],'ph-fill')}</span>
+<span style="flex:1;min-width:0"><b>${esc(n.title)}</b><p>${esc(n.body)}</p></span>
+<time>${dLabel(n.ts)}</time></button>`;}).join('')
+:`<div class="empty"><div class="empty-ic">${ic('bell')}</div><b>All caught up</b>Notifications about payments and security will appear here.</div>`}</div>
+</div></div>`;}
+
+const FAQS=[
+['Are these payments real?','No. PayWallet is an original design demo inspired by real payment platforms — not affiliated with PayPal or Stripe. Balances, people, banks and every transaction are simulated locally in your browser. Nothing is sent to any server.'],
+['What is the card layer?','A mock of Stripe-style card processing: live formatting, brand detection, and four test cards — success (4242…), decline (…0002), insufficient funds (…9995), and a 3D Secure challenge (…3184, code 123456). It sits behind a processCard() adapter, so in a real build you would swap that one function for the Stripe API.'],
+['What is the AI layer?','Rule-based mock intelligence: a conversational pay bar ("pay jordan 25 for pizza"), narrated insights, explainable fraud holds with named reasons, and phishing drills that attack you on purpose. All local heuristics — swap aiAdapter() for a real LLM call in production.'],
+['What is Pay in 4?','A buy-now-pay-later plan: the recipient is paid in full today, and you repay in 4 interest-free installments — 25% at purchase, then every 2 weeks. Available on G&S payments of $30–$1,500. Autopay can be simulated from the plans page.'],
+['How does Savings work?','A separate pocket earning a simulated 4.30% APY. Interest accrues automatically based on real elapsed time between visits. Sends only draw from your spendable balance.'],
+['What are the fees?','F&F: free from balance or bank; from a card, the sender pays 2.9% + $0.30. G&S: the recipient pays 3.49% + $0.49, the payment carries Buyer Protection, and the sender earns 1% cashback. Instant transfers to a card cost 1% (max $10); standard bank transfers are free. All shown before you confirm.'],
+['What is a phishing drill?','A simulated scam SMS arrives with classic tells — look-alike domains, urgency, password requests. Report it correctly and your score improves; open the link and you get the full breakdown of what you missed. Real wallets never ask for passwords or send verification links.'],
+['How do I reset everything?','Profile → Reset demo data restores the original sample account and history.']];
+function HelpPage(){
+return `<div style="max-width:640px;margin:0 auto"><div class="card pad">
+ ${phead('Help center','Answers about this mock demo',true)}
+<div class="notice" style="margin-bottom:14px">${ic('info')}<span>PayWallet is an original demo inspired by real payment platforms. Everything — including the “other side” of payments — is simulated locally.</span></div>
+ ${FAQS.map((f,i)=>`<div class="acc"><button class="acc-head" data-action="acc" data-id="${i}"><i class="q ph ph-question"></i>${esc(f[0])}${ic('caret-right','caret')}</button><div class="acc-body">${f[1]}</div></div>`).join('')}
+<button class="btn btn-primary btn-block" style="margin-top:18px" data-action="nav" data-page="helpContact">${ic('headset')}Contact support</button>
+</div></div>`;}
+function ContactPage(u){
+return `<div style="max-width:560px;margin:0 auto"><div class="card pad">
+ ${phead('Contact support','Simulated — replies are instant here',true)}
+<form data-form="contact" novalidate>
+<div class="field"><label for="cemail">Your email</label><input id="cemail" name="email" type="email" value="${esc(u.email||'')}"></div><p class="err-msg" data-err="email"></p>
+<div class="field"><label for="ctopic">Topic</label><select id="ctopic" name="topic"><option value="">Choose a topic…</option><option>Payments & transfers</option><option>Fees (F&F / G&S)</option><option>AI features</option><option>Card flow & 3DS</option><option>Security & verification</option><option>Account & profile</option><option>Something else</option></select></div><p class="err-msg" data-err="topic"></p>
+<div class="field"><label for="cmsg">Message</label><textarea id="cmsg" name="msg" rows="5" placeholder="Tell us what happened…"></textarea></div><p class="err-msg" data-err="msg"></p>
+<button class="btn btn-primary btn-block" data-busy="Sending…">${ic('paper-plane-tilt')}Send message</button>
+</form></div></div>`;}
+
+function renderApp(){
+let p=current().page;
+if(!db.session&&p!=='auth'){stack=[{page:'auth'}];p='auth';}
+let html;
+if(p==='auth')html=AuthPage();
+else{const u=me();let c='';
+switch(p){
+case 'home':c=HomePage(u);break;case 'send':c=SendPage();break;case 'request':c=RequestPage();break;
+case 'transfer':c=TransferPage();break;case 'add':c=AddPage();break;
+case 'activity':c=ActivityPage();break;case 'tx':c=TxPage(current().params.id);break;
+case 'insights':c=InsightsPage();break;case 'profile':c=ProfilePage(u);break;
+case 'notifications':c=NotifPage();break;case 'help':c=HelpPage();break;case 'helpContact':c=ContactPage(u);break;
+case 'setProfile':c=SetProfilePage(u);break;case 'setMethods':c=SetMethodsPage();break;
+case 'setNotifs':c=SetNotifsPage(u);break;case 'setSecurity':c=SetSecurityPage(u);break;
+case 'receive':c=ReceivePage();break;case 'friends':c=FriendsPage();break;
+case 'plans':c=PlansPage();break;case 'savings':c=SavingsPage();break;
+case 'success':c=SuccessPage();break;
+default:c=`<div class="card pad">${phead('Page not found','',false)}<div class="empty"><div class="empty-ic">${ic('compass')}</div><b>Lost?</b>That page doesn’t exist.</div></div>`;}
+html=shellHTML(c);}
+ $('#app').innerHTML=html;
+afterRender();syncBadges();}
+function afterRender(){
+const p=current().page;
+if(p==='send'&&flowSend&&flowSend.step==='review'&&methodById(flowSend.methodId).type!=='card'){
+const hb=$('#hold-btn');
+if(hb){hb.addEventListener('pointerdown',e=>{e.preventDefault();startHold(hb);});
+['pointerup','pointerleave','pointercancel'].forEach(ev=>hb.addEventListener(ev,()=>endHold(hb)));}}}
+
+function setErr(form,name,msg){const p=form.querySelector(`[data-err="${name}"]`);if(p){p.textContent=msg||'';p.style.display=msg?'block':'none';}
+const f=form.querySelector(`[name="${name}"]`);const fd=f&&f.closest('.field');if(fd)fd.classList.toggle('err',!!msg);}
+function clearErrs(form){form.querySelectorAll('.err-msg').forEach(p=>{p.style.display='none';});form.querySelectorAll('.field.err').forEach(x=>x.classList.remove('err'));}
+function withBusy(btn,label,fn){if(!btn||btn.dataset.b)return;const o=btn.innerHTML;btn.dataset.b='1';btn.disabled=true;btn.innerHTML=`<i class="ph ph-circle-notch spin"></i>${label}`;
+setTimeout(()=>{try{fn();}finally{btn.innerHTML=o;btn.disabled=false;delete btn.dataset.b;}},650);}
+function amtKey(c,k){let s=String(Math.floor(Math.abs(Number(c)||0)));if(k==='del')s=s.slice(0,-1);else{if(s.length>=9)return Math.floor(Math.abs(Number(c)||0));s=(s==='0'&&k!=='00')?k:s+k;}return Math.min(99999999,parseInt(s||'0',10)||0);}
+function updateAmtUI(target){
+const flows={send:flowSend,request:flowReq,transfer:flowTr,add:flowAdd};const f=flows[target];if(!f)return;
+const el=$('#amt');if(el){el.textContent=amtStr(f.c);el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');}
+if(target==='send'){const fl=$('#fee-line');if(fl)fl.innerHTML=f.c>0?sendFeeLine():'';
+const bl=$('#bal-line');if(bl)bl.innerHTML=sendBalLine();renderPreviewAside();}
+if(target==='request'){const b=$('#rq-send');if(b){b.disabled=f.c<=0;b.textContent=f.c>0?`Send ${f.sel.length} request${f.sel.length===1?'':'s'} · ${fmt(f.c/100)}`:'Send requests';}
+const tl=$('#rq-total');if(tl)tl.innerHTML=reqTotalLine();
+const rl=$('#rq-list');if(rl)rl.innerHTML=reqRosterHTML(f);
+renderPreviewAside();}
+if(target==='transfer')trRefresh();
+if(target==='add')addRefresh();}
+
+function securityReasons(cp,amountC){const my=me(),r=[],sens=my.settings.secSens||'standard';
+if(amountC>=100000)r.push(`Unusual size: ${fmt(amountC/100)} is much larger than your typical payment`);
+const prior=db.tx.some(t=>t.cp&&t.cp.id===cp.id&&t.status==='completed'&&t.kind==='payment');
+if(!prior&&amountC>=50000&&sens!=='low')r.push(`New relationship: this is your first payment to ${cp.name}`);
+const recent=db.tx.filter(t=>t.uid===my.id&&t.dir==='out'&&t.kind==='payment'&&t.status==='completed'&&Date.now()-t.date<6e5).length;
+if(recent>=2)r.push(`Velocity: ${recent+1} payments in the last 10 minutes`);
+const hr=new Date().getHours();
+if((hr>=0&&hr<5)&&amountC>=20000)r.push(`Odd hour: it's ${tLabel(Date.now())} — payments at this time are rare for you`);
+if(cp.id==='u_nina')r.push('Risk signal: this recipient was flagged in a previous report');
+if(sens==='high'&&amountC>=30000)r.push('Policy: security checks are set to High sensitivity');
+return r;}
+function validateSend(){const f=flowSend,m=methodById(f.methodId);let msg='';
+const bal=Math.round(me().balance*100);
+if(f.c<50)msg='Minimum payment is $0.50.';
+else if(m.type==='wallet'&&f.payIn4&&Math.round(f.c/4)>bal)msg='Insufficient balance for the first Pay in 4 installment — add money or use a card.';
+else if(m.type==='wallet'&&f.c>bal)msg='Insufficient balance — add money or pay with a linked card.';
+else if(m.type==='card'&&f.c>200000)msg='Card payments are capped at $2,000 in this demo.';
+if(msg){const p=$('#amt-err');
+if(p){p.textContent=msg;p.style.display='block';const a=$('#amt');if(a){a.style.animation='shake .4s ease';setTimeout(()=>{const x=$('#amt');if(x)x.style.animation='';},450);}}
+else toast(msg,'error');}
+return !msg;}
+function accrueSavings(){const u=me();if(!u)return;
+const s=u.savings||(u.savings={amt:0,last:Date.now()});
+const days=(Date.now()-(s.last||Date.now()))/864e5;
+if(days<0.02||s.amt<=0){s.last=Date.now();return;}
+const interest=Math.round(s.amt*0.043*days*100)/100;
+if(interest>=0.01){s.amt+=interest;
+notify('deposit','Savings interest',`+${fmt(interest)} accrued over ${days<1?Math.round(days*24)+' hours':Math.round(days)+' days'} at 4.30% APY (simulated).`);}
+s.last=Date.now();save();}
+function completeSend(ppRef){const f=flowSend,q=feeQuote(f.payType,f.methodId,f.c),u=me();
+const nm=f.to.name,amt=f.c/100,nt=f.note;
+const inst=Math.round(f.c/4);
+let cashback=0;
+if(f.payType==='gns')cashback=Math.round(f.c*0.01)/100;
+const tx={id:uid('tx'),uid:u.id,kind:'payment',dir:'out',amount:q.youPay/100,fee:q.fee/100,payType:f.payType,cp:{...f.to},cat:f.payType==='gns'?'shopping':'transfer',note:nt,status:'completed',date:Date.now(),method:f.methodId,extra:{settled:true,protect:f.payType==='gns',theyGet:q.theyGet/100,stripeRef:ppRef?ppRef.ref:null,threeDS:!!(ppRef&&ppRef.stepUp),payIn4:f.payIn4?{total:f.c/100}:null,cashback}};
+if(f.methodId==='wallet')u.balance-=(f.payIn4?inst:q.youPay)/100;
+if(cashback)u.balance+=cashback;
+if(f.requestId){const r=db.reqs.find(x=>x.id===f.requestId);if(r){r.status='paid';r.paidAt=Date.now();const rt=db.tx.find(t=>t.reqId===r.id);if(rt)rt.status='completed';}}
+if(f.payIn4){db.plans=db.plans||[];
+db.plans.push({id:uid('pl'),txId:tx.id,to:nm,note:nt,total:f.c/100,inst:inst/100,method:f.methodId,
+remaining:[1,2,3].map(i=>({n:i+1,amt:inst/100,due:Date.now()+i*14*864e5,paid:false}))});}
+db.tx.unshift(tx);save();
+toast(f.payIn4?`Paid ${fmt(inst/100)} of 4 — ${fmt(amt)} to ${nm}`:`Sent ${fmt(amt)} to ${nm}`,'success');
+successView={txId:tx.id};flowSend=freshSend();navTo('success');
+setTimeout(()=>{if(!db.session)return;
+notify('payment',`Delivered to ${nm}`,`${fmt(amt)} payment${nt?` “${nt}”`:''} was delivered (simulated receipt).`,tx.id);
+refreshIfVisible();},4000);
+if(Math.random()<0.55){
+setTimeout(()=>{if(!db.session)return;
+const reply=['Thanks so much! 🙏','Got it — appreciate you!','You’re the best, thank you!','Perfect timing, thanks!','Thank you!! 🎉'][Math.floor(Math.random()*5)];
+showBanner(nm,`“${esc(reply)}” — reply to your ${fmt(amt)} payment (simulated).`);
+notify('payment',`Message from ${nm}`,`“${reply}”`,tx.id);
+toast(`${nm}: “${reply}”`,'info');
+refreshIfVisible();},9000+Math.random()*6000);}}
+async function holdComplete(){
+const f=flowSend;if(!f.to||!validateSend())return;
+const reasons=securityReasons(f.to,f.c);
+let proceed=true;
+if(reasons.length)proceed=await securityHold(reasons,f.c/100,f.to);
+if(!proceed){const tx={id:uid('tx'),uid:me().id,kind:'payment',dir:'out',amount:f.c/100,fee:0,payType:f.payType,cp:{...f.to},cat:'transfer',note:f.note,status:'declined',date:Date.now(),method:f.methodId,extra:{autoBlocked:true}};
+db.tx.unshift(tx);save();
+notify('security','Security check stopped a payment',`${fmt(f.c/100)} to ${f.to.name} was cancelled after you declined the review.`,tx.id);
+toast('Payment cancelled by security check','security');
+flowSend=freshSend();navTo('home');return;}
+if(reasons.length)notify('security','Security check passed',`You confirmed the ${fmt(f.c/100)} payment to ${f.to.name}.`);
+runProcessing(['Verifying your account (mock)','Running security checks','Settling to '+f.to.name]).then(()=>completeSend(null));}
+function finishTransfer(){const f=flowTr,u=me();
+const fee=transferFee(f.methodId,f.c);
+const m=methodById(f.methodId);
+const tx={id:uid('tx'),uid:u.id,kind:'withdrawal',dir:'out',amount:f.c/100,fee:fee/100,cp:m.type==='card'?{name:`${m.brand} •• ${m.last4}`,email:'instant',bank:true}:{name:`${m.name} •• ${m.last4}`,email:'1–3 days',bank:true},cat:'withdrawal',note:m.type==='card'?'Instant transfer (1% fee)':'Standard transfer',status:'completed',date:Date.now(),method:f.methodId,extra:{settled:true}};
+u.balance-=f.c/100+fee/100;db.tx.unshift(tx);save();
+notify('deposit','Transfer started',`${fmt(f.c/100)} to ${methodLabel(f.methodId)}`,tx.id);
+toast(`${fmt(f.c/100)} on its way to ${methodLabel(f.methodId)}`,'success');
+successView={txId:tx.id};flowTr=freshFlow();navTo('success');}
+function finishAdd(){const f=flowAdd,u=me();
+const m=methodById(f.methodId);
+const tx={id:uid('tx'),uid:u.id,kind:'deposit',dir:'in',amount:f.c/100,fee:0,cp:{name:methodLabel(f.methodId),email:m.type==='card'?'instant':'1–3 days',bank:true},cat:'deposit',note:'',status:'completed',date:Date.now(),method:f.methodId,extra:{settled:true}};
+u.balance+=f.c/100;db.tx.unshift(tx);save();
+notify('deposit','Money added',`${fmt(f.c/100)} from ${methodLabel(f.methodId)}`,tx.id);
+toast(`${fmt(f.c/100)} added to your balance`,'success');
+successView={txId:tx.id};flowAdd=freshFlow();navTo('success');}
+
+function simRequestResponse(r,delay){
+const to=userById(r.to);if(!to)return;
+setTimeout(()=>{if(!db.session)return;
+if(r.status!=='pending')return;
+const my=me();
+if(Math.random()<0.75){
+r.status='paid';r.paidAt=Date.now();
+const rt=db.tx.find(t=>t.reqId===r.id);if(rt)rt.status='completed';
+const payTx={id:uid('tx'),uid:my.id,kind:'payment',dir:'in',amount:r.amount,fee:0,payType:'ff',cp:{id:to.id,name:to.name,email:to.email||'',color:to.color},cat:'transfer',note:r.note||'Request paid',status:'completed',date:Date.now(),method:'wallet',extra:{settled:true}};
+my.balance+=r.amount;db.tx.unshift(payTx);save();
+notify('payment',`${to.name} paid your request`,`${fmt(r.amount)}${r.note?` · “${r.note}”`:''}`,payTx.id);
+showBanner('PayWallet',`<b>${esc(to.name)}</b> paid your ${fmt(r.amount)} request${r.note?` — “${esc(r.note)}”`:''} (simulated).`);
+toast(`${to.name} paid your ${fmt(r.amount)} request`,'success');
+}else{
+r.status='declined';
+const rt=db.tx.find(t=>t.reqId===r.id);if(rt)rt.status='declined';save();
+notify('request',`${to.name} declined your request`,`${fmt(r.amount)}${r.note?` · “${r.note}”`:''}`);
+toast(`${to.name} declined your request`,'info');}
+refreshIfVisible();
+},delay);}
+function startSession(user){db.session={userId:user.id};save();
+if(!user.savings)user.savings={amt:0,last:Date.now()};
+accrueSavings();
+simMaybe();simOutstanding();resetTo('home');toast(`Welcome back, ${user.name.split(' ')[0]}`,'success');
+if(user.settings.loginAlerts)notify('security','New sign-in','You signed in on this device (simulated check).');}
+function simOutstanding(){
+db.reqs.filter(r=>r.dir==='out'&&r.status==='pending').forEach((r,i)=>{
+simRequestResponse(r,14000+i*9000+Math.random()*6000);});}
+function resetTo(page){stack=[{page}];renderApp();}
+function simMaybe(){
+if(simScheduled)return;simScheduled=true;
+setTimeout(()=>{
+if(!db.session)return;
+const u=me();const senders=['u_jordan','u_sam','u_maya'];
+const sid=senders[Math.floor(Math.random()*senders.length)];
+const sender=userById(sid);
+const amount=Math.round((12+Math.random()*28)*100)/100;
+const notes=['Lunch split','Rideshare fare','Movie tickets','Coffee run'];
+const note=notes[Math.floor(Math.random()*notes.length)];
+const tx={id:uid('tx'),uid:u.id,kind:'payment',dir:'in',amount,fee:0,payType:'ff',cp:{id:sid,name:sender.name,email:sender.email||'',color:sender.color},cat:'transfer',note,status:'completed',date:Date.now(),method:'wallet',extra:{settled:true}};
+u.balance+=amount;db.tx.unshift(tx);save();
+notify('payment',`${sender.name} sent you ${fmt(amount)}`,`“${note}”`,tx.id);
+showBanner('PayWallet',`<b>${esc(sender.name)}</b> sent you <b>${fmt(amount)}</b> — “${esc(note)}” (simulated).`);
+toast(`${sender.name} sent you ${fmt(amount)}`,'success');
+refreshIfVisible();
+if(Math.random()<0.45)setTimeout(()=>{if(db.session)showPhishDrill();},15000);
+},40000);}
+
+let holdRAF=null,holdStart=0;
+function startHold(btn){
+if(RM){holdComplete();return;}
+btn.classList.add('holding');holdStart=performance.now();
+const fg=btn.querySelector('.ring-fg');
+const tick=t=>{const pr=Math.min(1,(t-holdStart)/900);
+if(fg)fg.style.strokeDashoffset=String(289.03*(1-pr));
+if(pr>=1){endHold(btn);holdComplete();return;}
+holdRAF=requestAnimationFrame(tick);};
+holdRAF=requestAnimationFrame(tick);}
+function endHold(btn){if(holdRAF)cancelAnimationFrame(holdRAF);holdRAF=null;
+btn.classList.remove('holding');const fg=btn.querySelector('.ring-fg');if(fg)fg.style.strokeDashoffset='289.03';}
+
+function addMethodModal(){
+const ov=openModal(`<div style="padding-top:22px"><h3 style="font-size:19px;margin-bottom:14px">Add a mock card or bank</h3>
+<form data-form="add-method" novalidate>
+<div class="field"><label for="am-type">Type</label><select id="am-type" name="type"><option value="card">Debit card (instant transfers)</option><option value="bank">Bank account (standard, free)</option></select></div>
+<div id="am-card">
+<div class="field"><label for="am-num">Card number</label><input id="am-num" name="num" inputmode="numeric" placeholder="4242 4242 4242 4242"></div><p class="err-msg" data-err="num"></p>
+<div class="field"><label for="am-exp">Expiry (MM/YY)</label><input id="am-exp" name="exp" placeholder="12/28" maxlength="5"></div><p class="err-msg" data-err="exp"></p></div>
+<div id="am-bank" style="display:none">
+<div class="field"><label for="am-name">Bank nickname</label><input id="am-name" name="bname" placeholder="e.g. Wells Fargo Checking"></div><p class="err-msg" data-err="bname"></p></div>
+<p class="hint" style="margin-bottom:14px">${ic('info')} Mock instrument — it never contacts a real bank or card network.</p>
+<button class="btn btn-primary btn-block" data-busy="Linking…">Link instrument</button></form></div>`);
+const typeSel=ov.querySelector('#am-type');
+typeSel.onchange=()=>{ov.querySelector('#am-card').style.display=typeSel.value==='card'?'':'none';
+ov.querySelector('#am-bank').style.display=typeSel.value==='bank'?'':'none';};
+ov.querySelector('form').addEventListener('submit',e=>{e.preventDefault();
+const form=e.target;clearErrs(form);
+const type=form.type.value;
+if(type==='card'){
+const num=digits(form.num.value);
+if(!luhn(num)){setErr(form,'num','Enter a valid card number (try 4242 4242 4242 4242).');return;}
+if(!/^(0[1-9]|1[0-2])\/\d{2}$/.test(form.exp.value.trim())){setErr(form,'exp','Use MM/YY format.');return;}
+myMethods().push({id:uid('pm'),type:'card',brand:cardBrand(num),last4:num.slice(-4),exp:form.exp.value.trim(),isDefault:myMethods().length===0});
+}else{
+if(form.bname.value.trim().length<2){setErr(form,'bname','Give the account a nickname.');return;}
+myMethods().push({id:uid('pm'),type:'bank',name:form.bname.value.trim(),last4:String(Math.floor(1000+Math.random()*9000)),isDefault:myMethods().length===0});}
+save();closeModal(ov);toast('Instrument linked (mock)','success');
+if(current().page==='setMethods')renderApp();});}
+function addContactModal(q){
+const isEmail=/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(q||'');
+const ov=openModal(`<div style="padding-top:22px"><h3 style="font-size:19px;margin-bottom:14px">Pay someone new</h3>
+<form data-form="add-contact" novalidate>
+<div class="field"><label for="nc-name">Name</label><input id="nc-name" name="name" placeholder="Who are you paying?"></div><p class="err-msg" data-err="name"></p>
+<div class="field"><label for="nc-em">Email</label><input id="nc-em" name="email" type="email" value="${isEmail?esc(q):''}" placeholder="they@example.com"></div><p class="err-msg" data-err="email"></p>
+<div class="field"><label for="nc-ph">Phone (optional)</label><input id="nc-ph" name="phone" type="tel" placeholder="+1 (555) 555-0100"></div><p class="err-msg" data-err="phone"></p>
+<p class="hint" style="margin-bottom:14px">${ic('info')} Mock recipient — stored only in this browser.</p>
+<button class="btn btn-primary btn-block" data-busy="Adding…">Add & continue</button></form></div>`);
+ov.querySelector('form').addEventListener('submit',e=>{e.preventDefault();
+const form=e.target;clearErrs(form);
+if(form.name.value.trim().length<2){setErr(form,'name','Enter a name.');return;}
+const em=form.email.value.trim();
+if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){setErr(form,'email','Enter a valid email.');return;}
+const c={id:uid('u'),name:form.name.value.trim(),email:em,phone:form.phone.value.trim(),color:AV_COLORS[Math.floor(Math.random()*AV_COLORS.length)],isNew:true};
+db.contacts.push(c);save();closeModal(ov);
+flowSend.to={id:c.id,name:c.name,email:c.email};flowSend.step='amount';renderApp();});}
+
+function aiParsePay(text){
+const t=text.trim();if(t.length<4)return;
+const amtM=t.match(/\$?\s*(\d+(?:\.\d{1,2})?)/);
+const amountC=amtM?Math.round(parseFloat(amtM[1])*100):null;
+const q=t.toLowerCase();
+const person=[...db.users.filter(u=>u.id!==me().id),...db.contacts]
+.find(u=>q.includes(u.name.toLowerCase())||q.includes(u.name.toLowerCase().split(' ')[0]));
+const gns=/(buy|purchase|order|pay for|service|goods|invoice)/.test(q);
+const noteM=t.match(/for\s+(.+?)(?:\s+on\s+\w+)?$/i);
+if(person&&amountC&&amountC>=50){
+flowSend=freshSend();
+flowSend.to={id:person.id,name:person.name,email:person.email||''};
+flowSend.c=amountC;flowSend.note=noteM?noteM[1].trim():'';
+flowSend.payType=gns?'gns':'ff';
+flowSend.step='amount';stack=[{page:'send'}];renderApp();
+toast(`✦ Parsed: ${fmt(amountC)} to ${person.name}${gns?' · G&S':''}${flowSend.note?` · “${flowSend.note}”`:''}`,'info');}
+else if(t.length>=6)toast('✦ Try: “pay <name> <amount> for <what>”','info');}
+
+document.addEventListener('click',e=>{
+const el=e.target.closest('[data-action]');if(!el)return;
+const a=el.dataset.action;
+try{switch(a){
+case 'nav':{const pg=el.dataset.page;navTo(pg);break;}
+case 'back':back();break;
+case 'close-modal-btn':closeModal();break;
+case 'auth-tab':authMode=el.dataset.v;renderApp();break;
+case 'auth-demo':{const u=userById('u_me');authUser=u;authCode=genCode();authMode='2fa';
+showBanner('Messages',`PayWallet: Your security code is <b>${authCode}</b>. Never share this code.`);
+renderApp();break;}
+case 'resend-code':authCode=genCode();
+showBanner('Messages',`PayWallet: Your security code is <b>${authCode}</b>. Never share this code.`);
+toast('New code sent (simulated)','info');break;
+case 'pw-eye':{const inp=el.parentElement.querySelector('input');
+inp.type=inp.type==='password'?'text':'password';el.innerHTML=ic(inp.type==='password'?'eye':'eye-slash');break;}
+case 'logout':{db.session=null;save();authMode='login';resetTo('auth');toast('Logged out','info');break;}
+case 'guide':{openModal(`<div class="pad" style="padding-top:26px">
+<h3 style="font-size:19px;margin-bottom:10px">Things to try</h3>
+<div style="display:grid;gap:10px;font-size:13.5px;color:var(--ink-2)">
+<div class="notice">${ic('sparkle')}<span><b>✦ Conversational pay</b> — type “pay jordan 25 for pizza” in the Home bar and hit Enter. Recipient, amount, note and type are parsed.</span></div>
+<div class="notice"><i class="ph-fill ph-credit-card" style="color:var(--stripe);font-size:17px;margin-top:1px"></i><span><b>Break the card flow</b> — Add money → Card (Stripe-style). <span class="mono">4242…</span> succeeds, <span class="mono">…0002</span> declines, <span class="mono">…9995</span> insufficient, <span class="mono">…3184</span> triggers 3DS (code <b>123456</b>).</span></div>
+<div class="notice">${ic('shield-warning')}<span><b>Phishing drills</b> — Settings → Security → Run a drill. PayWallet attacks you on purpose; report the scam to score.</span></div>
+<div class="notice">${ic('chart-pie-slice')}<span><b>✦ AI insights</b> — the Insights page narrates your spending in plain sentences.</span></div>
+<div class="notice">${ic('calendar-check')}<span><b>Pay in 4</b> — G&S sends of $30–$1,500 split into 4 interest-free payments; “Simulate 2 weeks” runs autopay.</span></div>
+<div class="notice">${ic('piggy-bank')}<span><b>Savings</b> — earns 4.30% APY on real elapsed time; sends can’t touch it.</span></div>
+<div class="notice">${ic('users-three')}<span><b>F&F vs G&S</b> — toggle on the review screen to compare fees side by side.</span></div>
+<div class="notice">${ic('brackets-curly')}<span><b>Raw transaction data</b> — open any transaction and expand the mock record.</span></div>
+</div>
+<button class="btn btn-primary btn-block" data-action="close-modal-btn" style="margin-top:16px">Got it</button></div>`);break;}
+case 'dismiss-guide':me().settings.guideDismissed=true;save();renderApp();break;
+case 'toggle-balance':db.settings.hideBalance=!db.settings.hideBalance;save();renderApp();break;
+case 'quick-move':{if(el.dataset.type==='transfer'){flowTr=freshFlow();stack.push({page:'transfer'});}
+else{flowAdd=freshFlow();stack.push({page:'add'});}renderApp();break;}
+case 'nav-settings':stack.push({page:el.dataset.page});renderApp();break;
+case 'step-back':{const f=current().page==='send'?flowSend:flowReq;f.step=el.dataset.s;renderApp();break;}
+case 'pick-cp':{const c=findCp(el.dataset.id);flowSend.to={id:c.id,name:c.name,email:c.email,phone:c.phone};flowSend.step='amount';renderApp();break;}
+case 'friend-pay':{const u=userById(el.dataset.id);if(!u)break;
+flowSend=freshSend();flowSend.to={id:u.id,name:u.name,email:u.email};flowSend.step='amount';
+stack=[{page:'send'}];renderApp();break;}
+case 'add-new-cp':addContactModal(el.dataset.q||'');break;
+case 'key':{const t=el.dataset.target;const flows={send:flowSend,request:flowReq,transfer:flowTr,add:flowAdd};
+const f=flows[t];if(!f)break;
+f.c=amtKey(f.c,el.dataset.k);
+updateAmtUI(t);break;}
+case 'quick-add':{const t={send:'send',request:'request',transfer:'transfer',add:'add'}[current().page]||'send';
+const flows={send:flowSend,request:flowReq,transfer:flowTr,add:flowAdd};const f=flows[t];if(!f)break;
+f.c=Math.min(99999999,(Math.floor(Number(f.c)||0))+parseInt(el.dataset.v,10));
+updateAmtUI(t);break;}
+case 'amt-max':{const p=current().page;const u=me();
+if(p==='send'&&flowSend&&flowSend.to){const m=methodById(flowSend.methodId);
+flowSend.c=m.type==='card'?200000:Math.max(0,Math.floor(u.balance*100));updateAmtUI('send');}
+else if(p==='transfer'&&flowTr){if(!flowTr.methodId){const d=myMethods().find(x=>x.isDefault)||myMethods()[0];if(d)flowTr.methodId=d.id;}
+if(flowTr.methodId){const m=methodById(flowTr.methodId);const bal=Math.floor(u.balance*100);
+flowTr.c=m.type==='card'?(bal>20000?bal-1000:Math.max(0,Math.floor(bal/1.01))):bal;}
+updateAmtUI('transfer');}
+break;}
+case 'amt-clear':{const t={send:'send',request:'request',transfer:'transfer',add:'add'}[current().page]||'send';
+const flows={send:flowSend,request:flowReq,transfer:flowTr,add:flowAdd};const f=flows[t];if(!f)break;
+f.c=0;updateAmtUI(t);break;}
+case 'fund':flowSend.methodId=el.dataset.id;renderApp();break;
+case 'set-paytype':{flowSend.payType=el.dataset.v;
+if(el.dataset.v==='ff')flowSend.payIn4=false;
+renderApp();break;}
+case 'set-p4':flowSend.payIn4=!flowSend.payIn4;renderApp();break;
+case 'p4-pay':{const p=(db.plans||[]).find(x=>x.id===el.dataset.id);if(!p)break;
+const next=p.remaining.find(r=>!r.paid);if(!next)break;
+if(p.method==='wallet'&&next.amt*100>Math.round(me().balance*100)){toast('Insufficient balance for this installment','error');break;}
+if(p.method==='wallet')me().balance-=next.amt;
+next.paid=true;save();
+const left=p.remaining.filter(r=>!r.paid).length;
+if(left===0){notify('payment','Pay in 4 — plan complete',`All 4 installments for ${p.to} are paid (simulated).`);toast('Plan complete 🎉','success');}
+else{notify('payment','Pay in 4 — installment paid',`${fmt(next.amt)} to ${p.to} · ${left} payments left`);toast(`Installment paid: ${fmt(next.amt)}`,'success');}
+renderApp();break;}
+case 'p4-sim':{const plans=(db.plans||[]).filter(p=>p.remaining.some(r=>!r.paid));
+if(!plans.length){toast('No active plans','info');break;}
+const p=plans.find(x=>x.id===el.dataset.id)||plans[0];const next=p.remaining.find(r=>!r.paid);
+if(p.method==='wallet'){if(next.amt*100>Math.round(me().balance*100)){toast('Insufficient balance — this is where real autopay would fail','error');break;}
+me().balance-=next.amt;}
+next.paid=true;save();
+const left=p.remaining.filter(r=>!r.paid).length;
+notify('payment','Autopay: Pay in 4 installment',`${fmt(next.amt)} charged automatically for ${p.to} (simulated).`);
+showBanner('PayWallet',`Autopay charged <b>${fmt(next.amt)}</b> for ${esc(p.to)} (simulated).${left===0?' Plan complete!':''}`);
+renderApp();break;}
+case 'sav-in':savMove('in');break;
+case 'sav-out':savMove('out');break;
+case 'sav-go':{const u=me();const s=u.savings||(u.savings={amt:0,last:Date.now()});
+const dir=el.dataset.dir;const amtC=el.dataset.v==='all'?(dir==='in'?Math.round(u.balance*100):Math.round(s.amt*100)):parseInt(el.dataset.v,10);
+if(!amtC){toast('Nothing to move','info');break;}
+if(dir==='in'){if(amtC>Math.round(u.balance*100)){toast('Insufficient balance','error');break;}
+u.balance-=amtC/100;s.amt+=amtC/100;toast(`${fmt(amtC/100)} moved to Savings`,'success');}
+else{if(amtC>Math.round(s.amt*100)){toast('Not enough in Savings','error');break;}
+s.amt-=amtC/100;u.balance+=amtC/100;toast(`${fmt(amtC/100)} moved to your balance`,'success');}
+s.last=Date.now();save();closeModal();renderApp();break;}
+case 'to-review':{if(validateSend()){flowSend.step='review';renderApp();}break;}
+case 'pay-card':{const f=flowSend;if(!f.to||!validateSend())return;
+(async()=>{
+const reasons=securityReasons(f.to,f.c);
+let ok=true;
+if(reasons.length)ok=await securityHold(reasons,f.c/100,f.to);
+if(!ok){toast('Payment cancelled by security check','security');return;}
+const chargeC=f.payIn4?Math.round(f.c/4):feeQuote(f.payType,f.methodId,f.c).youPay;
+const saved=f.methodId!=='card'?myMethods().find(x=>x.id===f.methodId):null;
+const finish=ref=>{
+runProcessing([ref.stepUp?'3DS verified (mock Stripe)':'Card authorized (mock Stripe)','Settling to '+f.to.name])
+.then(()=>{completeSend(ref);offerSaveCard(ref);});};
+if(saved)cvcSheet(saved,chargeC,finish);
+else cardSheet(chargeC,finish);})();break;}
+case 'rq-pick':{const id=el.dataset.id;const i=flowReq.sel.indexOf(id);
+if(i>=0)flowReq.sel.splice(i,1);else flowReq.sel.push(id);renderApp();break;}
+case 'rq-send':{const f=flowReq;
+if(f.c<50){const p=$('#rq-err');if(p){p.textContent='Minimum request is $0.50.';p.style.display='block';}return;}
+runProcessing(['Validating recipients (mock)','Delivering requests']).then(()=>{
+const ids=[...f.sel];const names=ids.map(nameOf);let j=0;
+ids.forEach(id=>{const r={id:uid('rq'),dir:'out',from:me().id,to:id,amount:f.c/f.sel.length/100,note:f.note,status:'pending',date:Date.now()};
+db.reqs.push(r);
+db.tx.unshift({id:uid('tx'),uid:me().id,kind:'request',dir:'out',amount:r.amount,fee:0,payType:'ff',cp:{id,name:nameOf(id),email:(findCp(id)||{}).email||'',color:(findCp(id)||{}).color},cat:'transfer',note:f.note,status:'pending',date:r.date,method:'wallet',reqId:r.id});
+simRequestResponse(r,9000+Math.random()*16000+j*4000);j++;});
+save();successView={req:true,total:f.c/100,count:ids.length,names,note:f.note};
+flowReq=freshReq();navTo('success');});break;}
+case 'tr-fund':flowTr.methodId=el.dataset.id;renderApp();break;
+case 'tr-go':{const f=flowTr;if(!f.methodId||f.c<100)return;
+if(f.c+transferFee(f.methodId,f.c)>Math.round(me().balance*100)){toast('Insufficient balance including fee','error');return;}
+runProcessing(['Verifying your account (mock)','Releasing funds','Notifying your bank']).then(()=>finishTransfer());break;}
+case 'add-fund':flowAdd.methodId=el.dataset.id;renderApp();break;
+case 'add-go':{const f=flowAdd;if(!f.methodId||f.c<100)return;
+if(f.methodId==='card'){
+cardSheet(f.c,ref=>{
+runProcessing([ref.stepUp?'3DS verified (mock Stripe)':'Card authorized (mock Stripe)','Crediting your balance']).then(()=>{
+const u=me();
+const tx={id:uid('tx'),uid:u.id,kind:'deposit',dir:'in',amount:f.c/100,fee:0,
+cp:{name:ref.stepUp?'Card (mock Stripe · 3DS)':'Card (mock Stripe)',email:'instant',bank:true},cat:'deposit',note:'',status:'completed',
+date:Date.now(),method:'card',extra:{settled:true,stripeRef:ref.ref,threeDS:!!ref.stepUp}};
+u.balance+=f.c/100;db.tx.unshift(tx);save();
+notify('deposit','Money added',`${fmt(f.c/100)} via card (mock Stripe)`,tx.id);
+toast(`${fmt(f.c/100)} added to your balance`,'success');
+successView={txId:tx.id};flowAdd=freshFlow();navTo('success');offerSaveCard(ref);});});
+return;}
+runProcessing(['Contacting your bank (mock)','Crediting your balance']).then(()=>finishAdd());break;}
+case 'act-chip':actFilter.type=el.dataset.v;renderApp();break;
+case 'act-clear':actFilter={q:'',type:'all',status:'all'};renderApp();break;
+case 'open-tx':navTo('tx',el.dataset.id);break;
+case 'open-notif':{const n=db.notifs.find(x=>x.id===el.dataset.id);if(n){n.read=true;save();
+if(n.txId){navTo('tx',n.txId);}else{renderApp();}}break;}
+case 'notif-read-all':db.notifs.forEach(n=>n.read=true);save();renderApp();toast('All marked as read','info');break;
+case 'notif-clear':db.notifs=[];db.flags.actNew=false;save();renderApp();toast('Notifications cleared','info');break;
+case 'test-notif':notify('system','Test notification','This is what an alert looks like (simulated).');renderApp();toast('Test notification sent','success');break;
+case 'copy-ref':copyText(el.dataset.v,'Copied to clipboard');break;
+case 'tx-cancel':{confirmDialog({title:'Cancel this payment?',body:'The pending payment will be cancelled and the recipient notified (simulated).',ok:'Cancel payment',danger:true,icon:'x-circle'}).then(y=>{
+if(y){const t=db.tx.find(x=>x.id===el.dataset.id);if(t){t.status='cancelled';save();}
+toast('Payment cancelled','info');renderApp();}});break;}
+case 'tx-retry':{const t=db.tx.find(x=>x.id===el.dataset.id);
+runProcessing(['Re-authorizing (mock)','Running security checks','Settling']).then(()=>{
+t.status='completed';t.date=Date.now();save();toast('Payment completed','success');renderApp();});break;}
+case 'tx-review':{const t=db.tx.find(x=>x.id===el.dataset.id);
+securityHold((t.extra&&t.extra.reasons)||['Flagged by automated review'],t.amount,t.cp).then(y=>{
+if(y){t.status='completed';if(t.extra)t.extra.reviewed=true;save();
+notify('security','Security check cleared','You confirmed the flagged payment.');toast('Payment approved','success');}
+else{t.status='declined';save();toast('Payment cancelled','security');}
+renderApp();});break;}
+case 'tx-report':confirmDialog({title:'Report a problem?',body:'Our (simulated) resolution team will review this transaction within 24 hours. G&S payments carry Buyer Protection.',ok:'File report',icon:'warning'}).then(y=>{if(y)toast('Report filed — case #PW-'+Math.random().toString(36).slice(2,6).toUpperCase(),'success');});break;
+case 'ins-seg':insState.seg=el.dataset.v;insState.sel=null;renderApp();break;
+case 'sel-bar':{insState.sel=parseInt(el.dataset.i,10);
+const wc=$('#wk-chart');if(wc)wc.innerHTML=weeklyChart(insCache.days);break;}
+case 'color':editColor=el.dataset.v;renderApp();break;
+case 'reset-demo':confirmDialog({title:'Reset demo data?',body:'This wipes your local data and restores the original sample account.',ok:'Reset',danger:true,icon:'arrow-counter-clockwise'}).then(y=>{
+if(y){store.del(KEY);location.reload();}});break;
+case 'add-method':addMethodModal();break;
+case 'set-default':{const m=myMethods().find(x=>x.id===el.dataset.id);
+myMethods().forEach(x=>x.isDefault=x.id===m.id);save();renderApp();toast('Default updated','success');break;}
+case 'del-method':confirmDialog({title:'Remove this instrument?',body:'It will no longer be available for payments or transfers (mock).',ok:'Remove',danger:true}).then(y=>{
+if(y){const i=myMethods().findIndex(x=>x.id===el.dataset.id);if(i>=0)myMethods().splice(i,1);save();renderApp();toast('Instrument removed','info');}});break;
+case 'sw-toggle':{const key=el.dataset.key;const u=me();
+const path=key.split('.');
+if(path.length===2)u.settings[path[0]][path[1]]=!u.settings[path[0]][path[1]];
+else u.settings[key]=!u.settings[key];
+save();el.classList.toggle('on');el.setAttribute('aria-checked',el.classList.contains('on'));break;}
+case 'twofa-toggle':{const u=me();
+if(u.settings.twofa){confirmDialog({title:'Turn off 2-step verification?',body:'Your demo account will only require a password to sign in.',ok:'Turn off',danger:true,icon:'device-mobile'}).then(y=>{
+if(y){u.settings.twofa=false;save();renderApp();toast('2-step verification disabled','security');}});}
+else{u.settings.twofa=true;save();renderApp();
+showBanner('Messages',`PayWallet: 2-step verification is now <b>on</b>. You’ll get a code at your next login. (Simulated.)`);
+toast('2-step verification enabled','success');}break;}
+case 'sec-seg':me().settings.secSens=el.dataset.v;save();renderApp();toast('Security checks: '+el.dataset.v+' sensitivity','security');break;
+case 'phish-run':showPhishDrill();break;
+case 'device-out':confirmDialog({title:'Log out this device?',body:'The device will need to sign in again (simulated).',ok:'Log out',danger:true}).then(y=>{
+if(y){const u=me();u.devices=u.devices.filter(d=>d.id!==el.dataset.id);save();renderApp();toast('Device logged out','info');}});break;
+case 'signout-all':confirmDialog({title:'Log out all other devices?',body:'Every other session will be ended (simulated).',ok:'Log out all',danger:true}).then(y=>{
+if(y){const u=me();u.devices=u.devices.filter(d=>d.cur);save();renderApp();toast('Other devices logged out','security');}});break;
+case 'acc':el.closest('.acc').classList.toggle('open');break;
+case 'pay-req':{const r=db.reqs.find(x=>x.id===el.dataset.id);if(!r)break;
+const from=userById(r.from);
+flowSend=freshSend();flowSend.to={id:from.id,name:from.name,email:from.email||''};flowSend.requestId=r.id;
+flowSend.c=Math.round(r.amount*100);flowSend.note=r.note;flowSend.step='amount';
+stack=[{page:'send'}];renderApp();
+toast(`Paying ${from.name.split(' ')[0]}’s request of ${fmt(r.amount)}`,'info');break;}
+case 'decline-req':confirmDialog({title:'Decline this request?',body:'They won’t be able to charge you (simulated).',ok:'Decline',danger:true,icon:'x-circle'}).then(y=>{
+if(y){const r=db.reqs.find(x=>x.id===el.dataset.id);if(r){r.status='declined';
+const rt=db.tx.find(t=>t.reqId===r.id);if(rt)rt.status='declined';save();}
+toast('Request declined','info');renderApp();}});break;
+case 'remind-req':{const r=db.reqs.find(x=>x.id===el.dataset.id);
+if(r){const to=userById(r.to);
+showBanner('Messages',`To ${esc(to?to.name:'recipient')}: “Friendly reminder about the ${fmt(r.amount)} request${r.note?` for “${esc(r.note)}”`:''}” (simulated outbound).`);
+if(to&&Math.random()<0.6)simRequestResponse(r,6000+Math.random()*5000);}
+toast('Reminder sent (simulated)','info');break;}
+case 'cancel-req':confirmDialog({title:'Cancel your request?',body:'The request will be withdrawn.',ok:'Cancel request',danger:true}).then(y=>{
+if(y){const r=db.reqs.find(x=>x.id===el.dataset.id);if(r){r.status='cancelled';
+const rt=db.tx.find(t=>t.reqId===r.id);if(rt)rt.status='cancelled';save();}
+toast('Request cancelled','info');renderApp();}});break;
+case 'rc-amt':receiveAmtC=parseInt(el.dataset.v,10)||0;renderApp();break;
+case 'rc-share':{const url=payLink();const text=`Pay me on PayWallet (mock demo): ${url}`;
+if(navigator.share){navigator.share({title:'PayWallet (mock demo) — pay me',text,url}).catch(err=>{if(err&&err.name!=='AbortError')shareSheet(text,url);});}
+else shareSheet(text,url);break;}
+case 'sh-send':{const app=el.dataset.app;const url=payLink();closeModal();
+showBanner(app,`To ${esc(app)}: “Pay me: ${esc(url)}” (simulated outbound share).`);
+toast(`Shared via ${app} (simulated)`,'success');break;}
+case 'sh-copy':copyText(payLink(),'Link copied');closeModal();break;
+case 'friends-sync':friendsSyncing=true;renderApp();
+setTimeout(()=>{friendsSyncing=false;db.contactsSynced=true;save();renderApp();
+toast(`${matchContacts().on.length} contacts matched (simulated)`,'success');},1200);break;
+case 'friends-reset':db.contactsSynced=false;save();renderApp();break;
+case 'invite-cp':{const name=el.dataset.name,key=el.dataset.id;
+if(!db.invites)db.invites=[];if(!db.invites.includes(key))db.invites.push(key);save();
+showBanner('Messages',`Invite sent to <b>${esc(name)}</b>: “Join me on PayWallet (mock) — ${esc(payLink())}” (simulated).`);
+toast(`Invite sent to ${esc(name)}`,'success');renderApp();break;}
+}}catch(err){toast('Something went wrong: '+(err&&err.message||'unknown'),'error');console.error(err);}
+});
+
+document.addEventListener('input',e=>{
+const el=e.target.closest('[data-input]');if(!el)return;
+const k=el.dataset.input;
+if(k==='send-search'){sendQuery=el.value;const r=$('#send-results');if(r)r.innerHTML=sendResults(el.value);}
+if(k==='rq-search'){rqQuery=el.value;const r=$('#rq-results');if(r)r.innerHTML=rqResults(el.value);}
+if(k==='act-search'){actFilter.q=el.value;const r=$('#act-list');if(r)r.innerHTML=activityListHTML();}
+if(k==='send-note')flowSend.note=el.value;
+if(k==='rq-note')flowReq.note=el.value;
+if(k==='reg-pw'){const s=pwScore(el.value);const box=$('#pw-str');
+if(box){box.className='strength s'+s;box.querySelector('em').textContent=s?pwWord[s]:'—';}}
+});
+document.addEventListener('keydown',e=>{
+const aiEl=e.target.closest('[data-input="ai-cmd"]');if(!aiEl)return;
+if(e.key==='Enter')aiParsePay(aiEl.value);});
+document.addEventListener('change',e=>{
+const sel=e.target.closest('[data-filter]');if(sel&&sel.tagName==='SELECT'){
+actFilter[sel.dataset.filter]=sel.value;const r=$('#act-list');if(r)r.innerHTML=activityListHTML();}});
+document.addEventListener('submit',e=>{
+const form=e.target.closest('[data-form]');if(!form)return;e.preventDefault();
+const kind=form.dataset.form;
+if(kind==='login'){
+clearErrs(form);
+const id=form.id.value.trim().toLowerCase(),pw=form.pw.value;
+if(!id){setErr(form,'id','Enter your email or mobile number.');return;}
+if(!pw){setErr(form,'pw','Enter your password.');return;}
+const u=db.users.find(x=>(x.email||'').toLowerCase()===id||digits(x.phone)===digits(id));
+if(!u||!u.password){setErr(form,'id','No account found. Try the demo account below.');return;}
+if(u.password!==btoa(pw)){setErr(form,'pw','Incorrect password. (Demo hint: demo1234)');return;}
+if(u.settings.twofa){authUser=u;authCode=genCode();authMode='2fa';
+showBanner('Messages',`PayWallet: Your security code is <b>${authCode}</b>. Never share this code.`);
+renderApp();return;}
+startSession(u);}
+if(kind==='twofa-login'){
+clearErrs(form);
+const code=form.code.value.trim();
+if(!/^\d{6}$/.test(code)){setErr(form,'code','Enter the 6-digit code.');return;}
+if(code!==authCode){authTries++;setErr(form,'code',authTries>=3?'Too many attempts — resend the code.':'Incorrect code. Check the simulated SMS banner.');return;}
+startSession(authUser);authUser=null;authMode='login';authTries=0;}
+if(kind==='register'){
+clearErrs(form);let ok=true;
+const name=form.name.value.trim(),email=form.email.value.trim(),phone=form.phone.value.trim(),pw=form.pw.value;
+if(name.length<2){setErr(form,'name','Enter your name.');ok=false;}
+if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){setErr(form,'email','Enter a valid email.');ok=false;}
+else if(db.users.some(x=>(x.email||'').toLowerCase()===email.toLowerCase())){setErr(form,'email','That email already has an account.');ok=false;}
+if(digits(phone).length<7){setErr(form,'phone','Enter a valid mobile number.');ok=false;}
+if(pwScore(pw)<2){setErr(form,'pw','Password too weak — use 8+ chars with mixed characters.');ok=false;}
+if(!form.terms.checked){setErr(form,'terms','Please acknowledge the demo notice.');ok=false;}
+if(!ok)return;
+const u={id:uid('u'),name,email,phone,color:AV_COLORS[Math.floor(Math.random()*AV_COLORS.length)],joined:new Date().toISOString().slice(0,10),verified:false,password:btoa(pw),balance:0,savings:{amt:0,last:Date.now()},
+settings:{twofa:false,loginAlerts:true,secSens:'standard',guideDismissed:false,notif:{payments:true,requests:true,deposits:true,security:true,marketing:false}},
+methods:[],devices:[{id:uid('d'),name:'This browser',cur:true}]};
+db.users.push(u);save();
+startSession(u);
+showBanner('Messages',`Welcome to PayWallet (mock), ${esc(name.split(' ')[0])}! Try the ✦ bar: “pay jordan 25 for pizza”.`);}
+if(kind==='edit-profile'){
+clearErrs(form);let ok=true;
+const name=form.name.value.trim();
+if(name.length<2){setErr(form,'name','Enter your name.');ok=false;}
+if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email.value.trim())){setErr(form,'email','Enter a valid email.');ok=false;}
+if(!ok)return;
+const u=me();u.name=name;u.email=form.email.value.trim();u.phone=form.phone.value.trim();
+if(editColor)u.color=editColor;save();
+toast('Profile updated','success');back();}
+if(kind==='contact'){
+clearErrs(form);let ok=true;
+if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email.value.trim())){setErr(form,'email','Enter a valid email.');ok=false;}
+if(!form.topic.value){setErr(form,'topic','Choose a topic.');ok=false;}
+if(form.msg.value.trim().length<10){setErr(form,'msg','Tell us a bit more (10+ characters).');ok=false;}
+if(!ok)return;
+const btn=form.querySelector('button[data-busy]');withBusy(btn,'Sending…',()=>{
+runProcessing(['Routing to support (mock)','Creating your case']).then(()=>{
+openModal(`<div class="dlg"><div class="dlg-ic">${icf('headset')}</div><h3>Case created</h3>
+<p>Your reference is <b class="mono">PW-${Math.random().toString(36).slice(2,6).toUpperCase()}</b>. This is a simulated reply — no real support queue exists.</p>
+<div class="dlg-btns"><button class="btn btn-primary btn-block" data-action="close-modal-btn" style="grid-column:1/-1">Done</button></div></div>`);
+toast('Support case opened (simulated)','success');});});}
+});
+
+(function boot(){
+try{
+const raw=store.get(KEY);
+let parsed=null;
+if(raw){try{parsed=JSON.parse(raw);}catch(e){parsed=null;}}
+db=(parsed&&parsed.v===1)?parsed:seed();
+db.settings=db.settings||{hideBalance:false};
+db.flags=db.flags||{actNew:false};
+if(!Array.isArray(db.plans))db.plans=[];
+if(!Array.isArray(db.invites))db.invites=[];
+if(typeof db.contactsSynced!=='boolean')db.contactsSynced=false;
+if(!db.phishState)db.phishState={seen:0,correct:0,drills:[]};
+save();
+renderApp();
+window.addEventListener('error',ev=>{
+if(db&&$('#toasts'))toast('Something went wrong: '+(ev.message||'unknown'),'error');});
+}catch(err){
+const app=document.getElementById('app');
+app.innerHTML=`<div style="min-height:100vh;display:grid;place-items:center;padding:20px;font-family:system-ui,sans-serif">
+<div style="max-width:440px;text-align:center;background:#fff;border:1px solid #E3E7F2;border-radius:20px;padding:28px;box-shadow:0 10px 28px -14px rgba(59,91,219,.2)">
+<h2 style="margin:0 0 8px">Hit a snag</h2>
+<p style="color:#5C6885;font-size:14px;word-break:break-word">${esc(String(err&&err.message||err))}</p>
+<button onclick="location.reload()" style="margin-top:16px;padding:10px 18px;border-radius:12px;background:#3B5BDB;color:#fff;border:none;font-weight:600;cursor:pointer">Reload</button></div></div>`;}
+})();
+</script>
+</body>
+</html>
