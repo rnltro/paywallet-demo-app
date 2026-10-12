@@ -1,16 +1,16 @@
-PayWallet — a payment wallet designed to be broken
-A complete, single-file payment wallet that simulates the entire card andP2P lifecycle: Friends & Family vs Goods & Services fees, card declines,insufficient funds, 3D Secure step-up, buy-now-pay-later, savings interest,and fraud holds. One HTML file. No backend. No build step. No real money.
+PayWallet — a payment wallet designed to be broken<br>
+A complete, single-file payment wallet that simulates the entire card and P2P lifecycle: Friends & Family vs Goods & Services fees, card declines, insufficient funds, 3D Secure step-up, buy-now-pay-later, savings interest, and fraud holds. One HTML file. No backend. No build step. No real money.
 
 Not affiliated with PayPal or Stripe. PayWallet is an original demoinspired by real payment platforms.
 
 🎯 Try to break it
 Open the live demo → Profile → use the demo account → then attempt tomake a payment fail from Add money → Card (Stripe-style):
 
-Test card	What happens
-4242 4242 4242 4242	Succeeds (+1% cashback on purchases)
-4000 0000 0000 0002	Declined by issuer
-4000 0000 0000 9995	Insufficient funds
-4000 0027 6000 3184	Triggers 3D Secure (code: 123456)
+Test card&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;What happens<br>
+4242 4242 4242 4242	Succeeds (+1% cashback on purchases)<br>
+4000 0000 0000 0002	Declined by issuer<br>
+4000 0000 0000 9995	Insufficient funds<br>
+4000 0027 6000 3184	Triggers 3D Secure (code: 123456)<br>
 
 💡 The idea major wallets haven't shipped
 Before you confirm any payment, PayWallet shows F&F and G&S side byside — who pays the fee, what the recipient actually nets. Real walletsshow fees contextually; fee surprise is one of their mostcomplained-about behaviors. This demo takes a position: fees belong onthe confirmation screen, compared, before you commit.
